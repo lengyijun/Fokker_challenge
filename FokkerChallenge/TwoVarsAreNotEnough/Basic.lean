@@ -19,16 +19,17 @@ def two_vars_are_enough: Term String → Bool
   | _ => false
 
 @[scoped grind]
-theorem two_vars_are_enough_lcat {t} (g : two_vars_are_enough t) : LcAt 2 t := by
+theorem two_vars_are_enough_lc {t} (g : two_vars_are_enough t) : t.abs.abs.LC := by
+  rw [<- lcAt_iff_LC]
   induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
   | h n ih => cases t with
-  | fvar _ => grind
-  | bvar n => grind
-  | app t1 t2 => grind
+  | fvar => grind
+  | bvar => grind
+  | app => grind
   | abs t => cases t with
-    | bvar _ => grind
-    | fvar _ => grind
-    | app _ _ => grind
+    | bvar => grind
+    | fvar => grind
+    | app => grind
     | abs t =>  specialize @ih _ ?_ t ?_ rfl
                 grind
                 grind
@@ -36,13 +37,6 @@ theorem two_vars_are_enough_lcat {t} (g : two_vars_are_enough t) : LcAt 2 t := b
                 unfold LcAt
                 refine lcAt_le _ _ _ (by omega) ih
 
-@[scoped grind]
-theorem two_vars_are_enough_lc {t} (g : two_vars_are_enough t) : t.abs.abs.LC := by
-  rw [<- lcAt_iff_LC]
-  unfold LcAt
-  unfold LcAt
-  simp
-  apply two_vars_are_enough_lcat g
 
 theorem two_vars_are_enough_openRec {i x t} (g : two_vars_are_enough t) :
   two_vars_are_enough (t⟦i ↝ fvar x⟧) := by
