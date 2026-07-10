@@ -56,6 +56,15 @@ def subterms : Term String -> Finset (Term String)
   | Term.abs _ => ∅
   | Term.app t1 t2 => subterms t1 ∪ subterms t2
 
+theorem subterms_subset {t : Term String} :
+    ∀ s ∈ t.subterms, s.subterms ⊆ t.subterms := by
+  induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
+  | h n _ => cases t with
+  | bvar _ => grind
+  | fvar _ => grind
+  | app _ _ => grind
+  | abs t => cases t with grind
+
 @[scoped grind]
 theorem subterms_size {t} :
     ∀ s ∈ subterms t, s.fokker_size <= t.fokker_size := by
@@ -133,11 +142,29 @@ theorem two_vars_are_enough_subterms_lc {t} (h : two_vars_are_enough t) (hlc: t.
                                   grind
 
 
+@[scoped grind =]
+def idempotent (terms : Finset (Term String)) : Prop :=
+  terms.biUnion subterms = terms
 
+theorem subterms_idempotent {t : Term String} : idempotent t.subterms := by
+    induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
+    | h n _ => cases t with
+    | bvar _ => grind
+    | fvar _ => grind
+    | app _ _ => grind
+    | abs t => cases t with grind
+
+inductive GenFinset (atoms: Finset (Term String)) : Term String → Prop where
+  | base : ∀ atom ∈ atoms, GenFinset atoms atom
+  | app {M N}  : GenFinset atoms M → GenFinset atoms N → GenFinset atoms (app M N)
 
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
-  | leftApp   : ∀ t1 ∈ fs, ∀ t2, leftSpine fs t2 → leftSpine fs (t1.app t2)
+  | leftApp   : ∀ t1 ∈ fs, ∀ t2, GenFinset fs t2 → leftSpine fs (t1.app t2)
+
+
+-- theorem fooo {atoms : Finset (Term String)} {t} : GenFinset atoms t -> True := by
+  -- sorry
 
 theorem gen_leftspine {atom t t': Term String} (hlc : atom.LC) : Gen atom t -> t ↠ℓ t' ->
   leftSpine atom.subterms t' \/ ∃ s1 s2 s3: Term String, t' = (s1.app s2).app s3 := by
