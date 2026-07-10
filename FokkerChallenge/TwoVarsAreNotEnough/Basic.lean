@@ -1,5 +1,6 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
 import Mathlib.Data.Finset.Basic
@@ -137,6 +138,10 @@ theorem two_vars_are_enough_subterms_lc {t} (h : two_vars_are_enough t) (hlc: t.
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
   | leftApp   : ∀ t1 ∈ fs, ∀ t2, leftSpine fs t2 → leftSpine fs (t1.app t2)
+
+theorem gen_leftspine {atom t t': Term String} (hlc : atom.LC) : Gen atom t -> t ↠ℓ t' ->
+  leftSpine atom.subterms t' \/ ∃ s1 s2 s3: Term String, t' = (s1.app s2).app s3 := by
+  sorry
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
