@@ -140,11 +140,27 @@ inductive GenFinset (atoms: Finset (Term String)) : Term String → Prop where
 
 @[scoped grind]
 theorem genFinset_lc (fs : Finset (Term String))
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough) {t} (ht: GenFinset fs t) : t.LC := by
+  (h2 :  ∀ t ∈ fs, t.LC) {t} (ht: GenFinset fs t) : t.LC := by
   induction ht with grind
 
+theorem genFinset_list (fs : Finset (Term String))
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough) {t} (ht: GenFinset fs t) :
+  ∃ (l : List (Term String)) (f : Term String),
+    t = l.foldl Term.app (f.abs.abs) /\
+    f.abs.abs ∈ fs /\
+    ∀ x ∈ l, GenFinset fs x := by
+  induction ht with
+  | base atom h =>  exists []
+                    specialize h2 _ h
+                    unfold abs_two_vars_are_enough at h2
+                    split at h2 <;> grind
+  | @app M N _ _ ihm ihn =>
+    obtain ⟨l, f, _⟩ := ihm
+    refine ⟨l ++ [N], f, ?_⟩
+    grind
+
 theorem genFinset_open2 (fs : Finset (Term String))
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  (h2 :  ∀ t ∈ fs, t.LC)
   {x : Term String}
   (hx : x.two_vars_are_enough)
   (hsubset : x.subterms ⊆ fs)
@@ -172,6 +188,7 @@ theorem genFinset_open2 (fs : Finset (Term String))
                 · grind
                 · rw [open_lc] <;> grind
 
+-- TODO: this definition is almost wrong
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
   | leftApp   : ∀ t1 ∈ fs, ∀ t2, GenFinset fs t2 → leftSpine fs (t1.app t2)
@@ -190,6 +207,7 @@ theorem leftmost_multiapp {f a: Term String} {l} : f.abs.LC -> a.LC ->
                               cases h
                               induction l using List.reverseRecOn with grind
 
+-- TODO: this definition is almost useless
 def P (t : Term String) : Prop :=
   ∃ (l : List (Term String)) (f a b: Term String), t = (a :: b :: l).foldl Term.app f.abs.abs
 
