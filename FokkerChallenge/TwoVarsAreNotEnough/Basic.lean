@@ -133,6 +133,7 @@ theorem subterms_idempotent {t : Term String} : idempotent t.subterms := by
     | app _ _ => grind
     | abs t => cases t with grind
 
+@[scoped grind]
 inductive GenFinset (atoms: Finset (Term String)) : Term String → Prop where
   | base : ∀ atom ∈ atoms, GenFinset atoms atom
   | app {M N}  : GenFinset atoms M → GenFinset atoms N → GenFinset atoms (app M N)
@@ -143,28 +144,33 @@ theorem genFinset_lc (fs : Finset (Term String))
   induction ht with grind
 
 theorem genFinset_open2 (fs : Finset (Term String))
-  (h1 : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
-  (hfv : ∀ t ∈ fs, t.fv = ∅)
-  {x : Term String} (hx : x.abs.abs ∈ fs) :
+  {x : Term String}
+  (hx : x.two_vars_are_enough)
+  (hsubset : x.subterms ⊆ fs)
+  (hfv : x.fv = ∅) :
   ∀ y z, GenFinset fs y -> GenFinset fs z -> GenFinset fs (x⟦0 ↝ y⟧⟦1 ↝ z⟧) := by
   induction h : x.fokker_size using Nat.strong_induction_on generalizing x with
   | h n ih => cases x with intros y z hy hz
-  | bvar n => clear ih; grind
-  | fvar _ => specialize hfv _ hx
-              unfold fv at hfv
-              unfold fv at hfv
-              unfold fv at hfv
-              simp at hfv
+  | bvar n => clear ih
+              rw [openRec_bvar]
+              split
+              . rw [open_lc] <;> grind
+              . grind
+  | fvar _ => simp at hfv
   | app _ _ =>  rw [openRec_app]
-                apply GenFinset.app
-                sorry -- impossible
-                sorry
+                apply GenFinset.app <;> apply ih
+                any_goals rfl
+                all_goals grind
   | abs t => cases t with
     | bvar _ => clear ih; grind
     | fvar _ => clear ih; grind
     | app _ _ => clear ih; grind
-    | abs t => sorry -- trival
+    | abs t =>  rw [open_lc, open_lc]
+                · apply GenFinset.base
+                  grind
+                · grind
+                · rw [open_lc] <;> grind
 
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
