@@ -1,6 +1,7 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
+-- import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.MultiApp
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
 import Mathlib.Data.Finset.Basic
@@ -78,10 +79,8 @@ theorem subterms_size {t} :
 theorem subterms_gen {t M} (h : Gen t M) : t.subterms = M.subterms := by
   induction h with grind
 
-
-@[scoped grind]
-theorem subterms_two_vars_are_enough {t} (h : two_vars_are_enough t) :
-    ∀ s ∈ subterms t, two_vars_are_enough s := by
+theorem subterms_fv {t} (h : t.fv = ∅) :
+    ∀ s ∈ subterms t, s.fv = ∅ := by
     induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
     | h n _ => cases t with
       | bvar _ => grind
@@ -98,48 +97,28 @@ theorem subterms_preserved_under_openRec {x i t} (h : two_vars_are_enough t) :
     | app _ _ => grind
     | abs t => cases t with grind
 
-theorem two_vars_are_enough_subterms_lc {t} (h : two_vars_are_enough t) (hlc: t.LC) :
-    ∀ s ∈ subterms t, s.LC := by
+@[scoped grind =]
+def abs_two_vars_are_enough: Term String → Bool
+  | Term.abs (Term.abs t) => two_vars_are_enough t
+  | _ => false
+
+@[scoped grind]
+theorem abs_two_vars_are_enough_lc {t} (h: abs_two_vars_are_enough t) : t.LC := by
+  unfold abs_two_vars_are_enough at h
+  split at h <;> grind
+
+@[scoped grind]
+theorem subterms_two_vars_are_enough {t} (h : two_vars_are_enough t) :
+    ∀ s ∈ subterms t, abs_two_vars_are_enough s := by
     induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
-    | h n ih => cases t with
+    | h n _ => cases t with
       | bvar _ => grind
       | fvar _ => grind
-      | app t1 t2 =>  intros s hs
-                      unfold subterms at hs
-                      cases hlc
-                      simp at hs
-                      cases hs
-                      · refine ih t1.fokker_size ?_ ?_ ?_ rfl ?_ ?_
-                        all_goals grind
-                      · refine ih t2.fokker_size ?_ ?_ ?_ rfl ?_ ?_
-                        all_goals grind
-      | abs t => cases t with
-        | bvar _ => grind
-        | fvar _ => grind
-        | app _ _ => grind
-        | abs t =>  intros s hs
-                    unfold subterms at hs
-                    simp at hs
-                    cases hs with
-                    | inl _ => grind
-                    | inr h =>  cases hlc with | abs xs e hlc =>
-                                have ⟨x, _⟩ := fresh_exists <| free_union [fv] String
-                                specialize hlc x (by grind)
-                                cases hlc with | abs ys e hlc =>
-                                have ⟨y, _⟩ := fresh_exists <| free_union [fv] String
-                                specialize hlc y (by grind)
-                                refine @ih ((t⟦0 + 1 ↝ fvar x⟧) ^ fvar y).fokker_size ?_ ((t⟦0 + 1 ↝ fvar x⟧) ^ fvar y) ?_ ?_ ?_ ?_ ?_
-                                any_goals grind
-                                · apply two_vars_are_enough_openRec
-                                  apply two_vars_are_enough_openRec
-                                  grind
-                                · unfold open'
-                                  rw [<- subterms_preserved_under_openRec,
-                                      <- subterms_preserved_under_openRec]
-                                  grind
-                                  grind
-                                  apply two_vars_are_enough_openRec
-                                  grind
+      | app _ _ => grind
+      | abs t => cases t with grind
+
+theorem two_vars_are_enough_subterms_lc {t} (h : two_vars_are_enough t) :
+    ∀ s ∈ subterms t, s.LC := by grind
 
 
 @[scoped grind =]
@@ -158,16 +137,77 @@ inductive GenFinset (atoms: Finset (Term String)) : Term String → Prop where
   | base : ∀ atom ∈ atoms, GenFinset atoms atom
   | app {M N}  : GenFinset atoms M → GenFinset atoms N → GenFinset atoms (app M N)
 
+@[scoped grind]
+theorem genFinset_lc (fs : Finset (Term String))
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough) {t} (ht: GenFinset fs t) : t.LC := by
+  induction ht with grind
+
+theorem genFinset_open2 (fs : Finset (Term String))
+  (h1 : idempotent fs)
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  (hfv : ∀ t ∈ fs, t.fv = ∅)
+  {x : Term String} (hx : x.abs.abs ∈ fs) :
+  ∀ y z, GenFinset fs y -> GenFinset fs z -> GenFinset fs (x⟦0 ↝ y⟧⟦1 ↝ z⟧) := by
+  induction x with intros y z hy hz
+  | bvar n => grind
+  | fvar _ => specialize hfv _ hx
+              unfold fv at hfv
+              unfold fv at hfv
+              unfold fv at hfv
+              simp at hfv
+  | abs _ _ => sorry
+  | app _ _ _ _ => sorry
+
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
   | leftApp   : ∀ t1 ∈ fs, ∀ t2, GenFinset fs t2 → leftSpine fs (t1.app t2)
 
+theorem leftmost_multiapp {f a: Term String} {l} : f.abs.LC -> a.LC ->
+  (a :: l).foldl Term.app f.abs ⭢ℓ l.foldl Term.app (f^a) := by
+  induction l using List.reverseRecOn generalizing f a with
+  | nil => apply BetaAt.outer
+  | append_singleton l a _ => intros _ _
+                              simp
+                              apply BetaAt.appNoAbsL
+                              grind
+                              intros h
+                              generalize heq : (List.foldl app (f.abs.app a) l) = Q
+                              rw [heq] at h
+                              cases h
+                              induction l using List.reverseRecOn with grind
 
--- theorem fooo {atoms : Finset (Term String)} {t} : GenFinset atoms t -> True := by
-  -- sorry
+def P (t : Term String) : Prop :=
+  ∃ (l : List (Term String)) (f a b: Term String), t = (a :: b :: l).foldl Term.app f.abs.abs
 
-theorem gen_leftspine {atom t t': Term String} (hlc : atom.LC) : Gen atom t -> t ↠ℓ t' ->
-  leftSpine atom.subterms t' \/ ∃ s1 s2 s3: Term String, t' = (s1.app s2).app s3 := by
+theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term String} {l}
+  (h : GenFinset fs ((a :: b :: l).foldl Term.app f.abs.abs)):
+  ((a :: b :: l).foldl Term.app f.abs.abs) ⭢ℓ t'  ->
+   t' ⭢ℓ t'' ->
+  GenFinset fs t''
+  := by
+  sorry
+
+theorem gen_leftspine {fs : Finset (Term String)}
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  (hfv : ∀ t ∈ fs, t.fv = ∅)
+  {t t' t'': Term String} :
+    P t ->
+    t  ⭢ℓ t'  ->
+    t' ⭢ℓ t'' ->
+  leftSpine fs t'' \/ P t'' := by
+  sorry
+
+theorem no_P_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
+  Gen atom t ->
+  Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")) ->
+  ∀ t', t ↠ℓ t' -> P t' -> False := by
+  sorry
+
+theorem exists_leftSpine_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
+  Gen atom t ->
+  Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")) ->
+  ∃ t', t ↠ℓ t' /\ leftSpine atom.subterms t' := by
+  -- grind [no_P_reduct, gen_leftspine]
   sorry
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
