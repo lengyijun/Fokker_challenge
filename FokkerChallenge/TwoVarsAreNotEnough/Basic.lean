@@ -148,15 +148,23 @@ theorem genFinset_open2 (fs : Finset (Term String))
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {x : Term String} (hx : x.abs.abs ∈ fs) :
   ∀ y z, GenFinset fs y -> GenFinset fs z -> GenFinset fs (x⟦0 ↝ y⟧⟦1 ↝ z⟧) := by
-  induction x with intros y z hy hz
-  | bvar n => grind
+  induction h : x.fokker_size using Nat.strong_induction_on generalizing x with
+  | h n ih => cases x with intros y z hy hz
+  | bvar n => clear ih; grind
   | fvar _ => specialize hfv _ hx
               unfold fv at hfv
               unfold fv at hfv
               unfold fv at hfv
               simp at hfv
-  | abs _ _ => sorry
-  | app _ _ _ _ => sorry
+  | app _ _ =>  rw [openRec_app]
+                apply GenFinset.app
+                sorry -- impossible
+                sorry
+  | abs t => cases t with
+    | bvar _ => clear ih; grind
+    | fvar _ => clear ih; grind
+    | app _ _ => clear ih; grind
+    | abs t => sorry -- trival
 
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
