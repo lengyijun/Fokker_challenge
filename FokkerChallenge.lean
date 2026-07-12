@@ -13,6 +13,7 @@ import FokkerChallenge.EnhancedCslib.EtaNormalForm
 import FokkerChallenge.EnhancedCslib.BetaEtaNormalForm
 import FokkerChallenge.EnhancedCslib.FvarSubset
 import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
+import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.Decider.NoDuplicate
 import FokkerChallenge.Decider.EveryBvarUsed
 import FokkerChallenge.Decider.All0
