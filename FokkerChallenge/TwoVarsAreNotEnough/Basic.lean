@@ -207,9 +207,11 @@ theorem leftmost_multiapp {f a: Term String} {l} : f.abs.LC -> a.LC ->
                               cases h
                               induction l using List.reverseRecOn with grind
 
--- TODO: this definition is almost useless
-def P (t : Term String) : Prop :=
-  ∃ (l : List (Term String)) (f a b: Term String), t = (a :: b :: l).foldl Term.app f.abs.abs
+def P (fs : Finset (Term String)) (t : Term String) : Prop :=
+  ∃ (l : List (Term String)) (f a b: Term String),
+    t = (a :: b :: l).foldl Term.app f.abs.abs /\
+    f.abs.abs ∈ fs /\
+    ∀ x ∈ (a :: b :: l), GenFinset fs x
 
 theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term String} {l}
   (h : GenFinset fs ((a :: b :: l).foldl Term.app f.abs.abs)):
@@ -223,16 +225,16 @@ theorem gen_leftspine {fs : Finset (Term String)}
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t' t'': Term String} :
-    P t ->
+    P fs t ->
     t  ⭢ℓ t'  ->
     t' ⭢ℓ t'' ->
-  leftSpine fs t'' \/ P t'' := by
+  leftSpine fs t'' \/ P fs t'' := by
   sorry
 
 theorem no_P_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
   Gen atom t ->
   Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")) ->
-  ∀ t', t ↠ℓ t' -> P t' -> False := by
+  (∀ t', t ↠ℓ t' -> P atom.subterms t') -> False := by
   sorry
 
 theorem exists_leftSpine_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
