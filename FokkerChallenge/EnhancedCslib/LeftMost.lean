@@ -3,9 +3,6 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Insert
-import Mathlib.Data.Finset.Union
 
 namespace Cslib
 
@@ -24,6 +21,18 @@ theorem leftmost_multiapp (f a: Term String) (l) : f.abs.LC -> a.LC ->
                               rw [heq] at h
                               cases h
                               induction l using List.reverseRecOn with grind
+
+theorem normal_app (t : Term String) (hlc : t.LC) (habs: ¬ IsAbs t) (hfv : t.fv = ∅) : ¬t.BetaNormal := by
+  induction t with cases hlc
+  | abs _ _ => grind
+  | fvar _ => unfold fv at hfv
+              simp at hfv
+  | app a _ ihl _ =>  by_cases a.IsAbs
+                      . grind [BetaNormal, countRedexes]
+                      . specialize ihl (by grind) (by grind) (by grind)
+                        intro h
+                        apply BetaNormal.app_inv at h
+                        grind [BetaNormal, countRedexes]
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 

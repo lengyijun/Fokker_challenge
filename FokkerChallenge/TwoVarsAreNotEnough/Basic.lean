@@ -144,6 +144,7 @@ theorem genFinset_lc (fs : Finset (Term String))
   (h2 :  ∀ t ∈ fs, t.LC) {t} (ht: GenFinset fs t) : t.LC := by
   induction ht with grind
 
+/-
 theorem genFinset_list (fs : Finset (Term String))
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough) {t} (ht: GenFinset fs t) :
   ∃ (l : List (Term String)) (f : Term String),
@@ -159,6 +160,7 @@ theorem genFinset_list (fs : Finset (Term String))
     obtain ⟨l, f, _⟩ := ihm
     refine ⟨l ++ [N], f, ?_⟩
     grind
+-/
 
 theorem genFinset_open2 (fs : Finset (Term String))
   (h2 :  ∀ t ∈ fs, t.LC)
@@ -166,7 +168,7 @@ theorem genFinset_open2 (fs : Finset (Term String))
   (hx : x.two_vars_are_enough)
   (hsubset : x.subterms ⊆ fs)
   (hfv : x.fv = ∅) :
-  ∀ y z, GenFinset fs y -> GenFinset fs z -> GenFinset fs (x⟦0 ↝ y⟧⟦1 ↝ z⟧) := by
+  ∀ y z, GenFinset fs y -> GenFinset fs z -> GenFinset fs (x⟦1 ↝ y⟧⟦0 ↝ z⟧) := by
   induction h : x.fokker_size using Nat.strong_induction_on generalizing x with
   | h n ih => cases x with intros y z hy hz
   | bvar n => clear ih
@@ -188,6 +190,12 @@ theorem genFinset_open2 (fs : Finset (Term String))
                   grind
                 · grind
                 · rw [open_lc] <;> grind
+
+theorem genFinset_list (fs : Finset (Term String))
+  {f} {l : List (Term String)}
+  (ht: GenFinset fs f)
+  (hl : ∀ x ∈ l, GenFinset fs x) : GenFinset fs (l.foldl Term.app f) := by
+  induction l generalizing f with grind
 
 @[scoped grind]
 def spine : Term String → Term String × List (Term String)
@@ -222,6 +230,8 @@ theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term Str
 -/
 
 axiom foo {M : Term String} : BetaNormal M <-> Relation.Normal FullBeta M
+
+axiom BetaAt.unique {M N Q: Term String} {i} : BetaAt i M N -> BetaAt i M Q -> N = Q
 
 @[reduction_sys "ℓℓ"]
 inductive LeftMost2 : Term String → Term String → Prop
@@ -263,6 +273,7 @@ theorem size_dichotomy (t : Term String) :
     exact h ⟨t', hstep, by omega⟩
 
 theorem leftmost2_preserves_P {fs : Finset (Term String)}
+  (hidempotent : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t': Term String} :
@@ -285,8 +296,18 @@ theorem leftmost2_preserves_P {fs : Finset (Term String)}
   cases l <;> try grind
   cases h4 with | base h4 h7 =>
   rename_i f _ b l N
-  have := leftmost_multiapp f.abs a (b::l) (by grind)
-  sorry
+  have : GenFinset fs a := by grind
+  have : GenFinset fs b := by grind
+  have h8 := leftmost_multiapp f.abs a (b::l) (by grind) (by grind)
+  have := BetaAt.unique h8 h4
+  subst N
+  have h8 := leftmost_multiapp (f⟦1 ↝ a⟧) b l (by grind) (by grind)
+  have := BetaAt.unique h8 h7
+  rw [<- genfinset_P]
+  subst t'
+  apply genFinset_list
+  apply genFinset_open2
+  all_goals grind
 
 theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
@@ -303,7 +324,8 @@ theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
               rw [heq] at h3 h
               constructor
               . grind [IsAbs, BetaNormal]
-              . grind [IsAbs, BetaNormal]
+              . have : t''.spine.1 ∈ fs := by grind
+                grind [IsAbs, BetaNormal, LeftMost2]
   | inr g =>  obtain ⟨t', g, _⟩ := g
               grind [IsAbs, BetaNormal]
 
