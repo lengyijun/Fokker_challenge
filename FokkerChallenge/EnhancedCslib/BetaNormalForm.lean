@@ -130,6 +130,7 @@ theorem has_beta_redex_equiv_full_beta {M : Term String} :
 theorem normal_fullBeta_iff_no_beta_redex {N}: (N.has_beta_redex = false \/ ¬ N.LC) <-> Relation.Normal FullBeta N := by grind [has_beta_redex_equiv_full_beta]
 
 
+@[scoped grind]
 axiom betanormal_iff {M : Term String} : BetaNormal M <-> Relation.Normal FullBeta M
 
 theorem leftstar_cases {M N Q : Term String} (h : M.app N ↠ℓ Q) :

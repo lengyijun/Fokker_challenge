@@ -546,8 +546,17 @@ theorem exists_leftSpine_reduct {atom : Term String}
   cases h with
   | inl h => grind
   | inr h =>  exfalso
-              obtain ⟨_, _, _⟩ := hnormal
-              sorry
+              cases normalizable_app_implies_normalizable_or_reduces_to_abs hnormal with
+      | inr h3 => obtain ⟨M, hm, _⟩ := h3
+                  cases hm
+                  sorry
+      | inl h3 => cases normalizable_app_implies_normalizable_or_reduces_to_abs h3 with
+      | inr h3 => grind
+      | inl h3 => obtain ⟨t'', h3, _⟩ := h3
+                  obtain ⟨_, h⟩ := h t'' h3
+                  apply h
+                  rw [betanormal_iff]
+                  sorry
   rw [<- genfinset_P]
   apply gen_abs_2_vars_are_enough ht
   grind
