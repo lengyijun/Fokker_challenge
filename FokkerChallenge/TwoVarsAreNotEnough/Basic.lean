@@ -547,9 +547,8 @@ theorem exists_leftSpine_reduct {atom : Term String}
   | inl h => grind
   | inr h =>  exfalso
               cases normalizable_app_implies_normalizable_or_reduces_to_abs hnormal with
-      | inr h3 => obtain ⟨M, hm, _⟩ := h3
-                  cases hm
-                  sorry
+      | inr h3 => obtain ⟨M, _, g⟩ := h3
+                  cases leftstar_cases g <;> grind
       | inl h3 => cases normalizable_app_implies_normalizable_or_reduces_to_abs h3 with
       | inr h3 => grind
       | inl h3 => obtain ⟨t'', h3, _⟩ := h3
