@@ -499,7 +499,7 @@ theorem bar {fs : Finset (Term String)}
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t} (ht: P fs t)
-  : (∃ t', t ↠ℓ t' /\ P fs t /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1)) \/ (∀ t', t ↠ℓ t' -> ¬ IsAbs t' /\ ¬ BetaNormal t') := by
+  : (∃ t', t ↠ℓ t' /\ P fs t' /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1)) \/ (∀ t', t ↠ℓ t' -> ¬ IsAbs t' /\ ¬ BetaNormal t') := by
   cases size_dichotomy t with
   | inl h => right
              apply leftmost2_neither_abs_nor_beta_normal hidempotent h2 hfv _ ht h
@@ -538,7 +538,7 @@ theorem no_P_reduct {fs : Finset (Term String)}
 theorem exists_leftSpine_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
   Gen atom t ->
   Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")) ->
-  ∃ t', t ↠ℓ t' /\ leftSpine atom.subterms t' := by
+  ∃ t', t ↠ℓ t' /\ P fs t' /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1) := by
   -- grind [no_P_reduct, gen_leftspine]
   sorry
 
