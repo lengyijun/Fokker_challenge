@@ -5,6 +5,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
 import FokkerChallenge.EnhancedCslib.LeftMost
+import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -103,6 +104,10 @@ def abs_two_vars_are_enough: Term String → Bool
   | Term.abs (Term.abs t) => two_vars_are_enough t
   | _ => false
 
+theorem abs_two_vars_are_enough_weak {t} (h: abs_two_vars_are_enough t) : t.two_vars_are_enough := by
+  unfold abs_two_vars_are_enough at h
+  grind
+
 @[scoped grind]
 theorem abs_two_vars_are_enough_lc {t} (h: abs_two_vars_are_enough t) : t.LC := by
   unfold abs_two_vars_are_enough at h
@@ -149,6 +154,14 @@ theorem genFinset_fv (fs : Finset (Term String))
   (hfv : ∀ t ∈ fs, t.fv = ∅)
    {t} (ht: GenFinset fs t) : t.fv = ∅ := by
   induction ht with grind
+
+theorem gen_abs_2_vars_are_enough {atom M : Term String} (h : Gen atom M) (g : atom.abs_two_vars_are_enough):
+  GenFinset atom.subterms M := by
+  induction h with
+  | base => apply GenFinset.base
+            unfold abs_two_vars_are_enough at g
+            grind
+  | app _ _ _ _ => grind
 
 /-
 theorem genFinset_list (fs : Finset (Term String))
@@ -235,7 +248,7 @@ theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term Str
   sorry
 -/
 
-axiom foo {M : Term String} : BetaNormal M <-> Relation.Normal FullBeta M
+
 
 axiom BetaAt.unique {M N Q: Term String} {i} : BetaAt i M N -> BetaAt i M Q -> N = Q
 
@@ -243,7 +256,9 @@ axiom BetaAt.step_fv {M N: Term String} {i} : BetaAt i M N -> N.fv ⊆ M.fv
 
 @[reduction_sys "ℓℓ"]
 inductive Leftmost2 : Term String → Term String → Prop
-  | base {M N Q} : Leftmost M N -> Leftmost N Q -> Leftmost2 M Q
+  | base {M1 M2 M3 N Q} : Leftmost (Term.app (Term.app M1 M2) M3) N ->
+                          Leftmost N Q ->
+                          Leftmost2 (Term.app (Term.app M1 M2) M3) Q
 
 @[scoped grind]
 axiom Leftmost2.steps_fv {M N: Term String} : Relation.ReflTransGen Leftmost2 M N -> N.fv ⊆ M.fv
@@ -255,9 +270,6 @@ lemma step_lc_r {M M' : Term String} (redex : M ⭢ℓℓ M') : LC M -> LC M' :=
 @[scoped grind]
 lemma steps_lc_r {M M' : Term String} (redex : M ↠ℓℓ  M') : LC M -> LC M' := by
   induction redex with grind [step_lc_r]
-
-theorem leftmost_rtc_cases {M N} (h : M ↠ℓ N) : M ↠ℓℓ N \/ ∃ Q, M ↠ℓℓ Q /\ Q ⭢ℓ N := by
-  induction h with grind [Leftmost2]
 
 @[scoped grind]
 theorem leftmostMulti_to_multi {M N} (h : M ↠ℓℓ N) : M ↠ℓ N := by
@@ -314,25 +326,24 @@ theorem leftmost2_preserves_P_l {fs : Finset (Term String)}
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t': Term String}
-  (step : t ⭢ℓℓ t') :
-  t.spine.2.length ≥ 2 ->
-  P fs t ->
+  (step : t ⭢ℓℓ t')
+  (h5 : P fs t) :
   P fs t' := by
-  intros h3 h5
-  have h6 := spine_def_2 t
-  have h7 := h2 t.spine.1 (by grind)
-  unfold abs_two_vars_are_enough at h7
-  split at h7 <;> try grind
-  rename_i heq
-  rw [heq] at h6
-  rw [<- h6] at step
-  generalize hl: t.spine.2 = l
-  rw [hl] at h3 step
+  cases step with | base h4 h7 =>
+  rename_i M1 M2 M3 N
+  have h6 := spine_def_2 ((M1.app M2).app M3)
+  generalize hl: ((M1.app M2).app M3).spine.2 = l
+  rw [hl] at h6
+  rw [<- h6] at h4
   cases l <;> try grind
   rename_i a l
   cases l <;> try grind
-  cases step with | base h4 h7 =>
-  rename_i f _ b l N
+  rename_i b l
+  have h7 := h2 ((M1.app M2).app M3).spine.1 (by grind)
+  unfold abs_two_vars_are_enough at h7
+  split at h7 <;> try grind
+  rename_i f heq
+  rw [heq] at h4
   have : GenFinset fs a := by grind
   have : GenFinset fs b := by grind
   have h8 := leftmost_multiapp f.abs a (b::l) (by grind) (by grind)
@@ -346,22 +357,19 @@ theorem leftmost2_preserves_P_l {fs : Finset (Term String)}
   apply genFinset_open2
   all_goals grind
 
+
 theorem step_leftmost2_preserves_P_r {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t': Term String}
   (step : t ⭢ℓℓ t')
-  (pt: P fs t)
-  (ht': t'.spine.2.length ≥ 1) :
+  (pt: P fs t):
   P fs t' := by
   cases t with
   | bvar _ => grind
   | fvar _ => grind
-  | abs _ =>  cases step with | base h1 h2 =>
-              apply BetaAt.isAbs_r at h1
-              apply BetaAt.isAbs_r at h2
-              grind
+  | abs _ =>  cases step
   | app M _ => cases M with
     | bvar _ => grind
     | fvar _ => grind
@@ -369,58 +377,52 @@ theorem step_leftmost2_preserves_P_r {fs : Finset (Term String)}
                   any_goals grind
                   · exact step
                   · grind
-                  · grind
     | abs _ =>  cases pt with | intro left right =>
                 specialize h2 _ left
                 unfold abs_two_vars_are_enough at h2
                 split at h2 <;> try grind
                 rename_i heq
                 rw [heq] at step
-                cases step with | base h1 h2 =>
-                unfold Leftmost at h1 h2
-                generalize hq : 0 = Q
-                rw [hq] at h1 h2
-                cases h1 with
-                | appL _ => grind
-                | appR _ => grind
-                | outer _ _ =>  generalize hq : 0 = Q
-                                rw [hq] at h2
-                                cases h2 with
-                                | abs xs _ => grind
+                cases step
 
 theorem steps_leftmost2_preserves_P_r {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t': Term String}
-  (steps : Relation.ReflTransGen Leftmost2 t t')
-  (pt: P fs t)
-  (ht': t'.spine.2.length ≥ 1) :
+  (steps : t ↠ℓℓ t')
+  (pt: P fs t):
   P fs t' := by
-  induction steps with
+  induction steps with grind [leftmost2_preserves_P_l]
+
+theorem leftmost_rtc_cases {M N}
+  (h : ∀ t', M ↠ℓℓ t' → t'.spine.2.length ≥ 2)
+  (hmn : M ↠ℓ N) : M ↠ℓℓ N \/ ∃ Q, M ↠ℓℓ Q /\ Q ⭢ℓ N := by
+  induction hmn with
   | refl => grind
-  | tail htb hbd ih =>
-    rename_i b d
-    cases hbd with | base hbc hcd =>
-    rename_i c
-    cases b with
-    | fvar _ => unfold Leftmost at hbc
-                generalize hq : 0 = Q
-                rw [hq] at hbc
-                cases hbc
-    | bvar _ => unfold Leftmost at hbc
-                generalize hq : 0 = Q
-                rw [hq] at hbc
-                cases hbc
-    | abs _ =>  unfold Leftmost at hbc hcd
-                generalize hq : 0 = Q
-                rw [hq] at hbc hcd
-                cases hbc
-                cases hcd
-                grind
-    | app _ _ =>  specialize ih (by grind)
-                  refine step_leftmost2_preserves_P_r hidempotent h2 hfv ?_ ih ht'
-                  constructor <;> assumption
+  | tail _ _ ih => cases ih with
+  | inl => grind
+  | inr ih => left
+              obtain ⟨Q, hmq, hqb⟩ := ih
+              refine .trans (by assumption) (.single ?_)
+              specialize h _ hmq
+              have h3 := spine_def_2 Q
+              generalize hq : Q.spine.2 = l
+              cases (List.eq_nil_or_concat' l) <;> try grind
+              rename_i heq
+              obtain ⟨L, b, _⟩ := heq
+              subst l
+              rename_i heq
+              rw [heq] at h3
+              rw [List.foldl_concat] at h3
+              cases (List.eq_nil_or_concat' L) <;> try grind
+              rename_i heq
+              obtain ⟨l, b, _⟩ := heq
+              subst L
+              rw [List.foldl_concat] at h3
+              rw [<- h3]
+              rw [<- h3] at hqb
+              constructor <;> assumption
 
 theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
@@ -431,8 +433,7 @@ theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
   (h : ∀ t', t ↠ℓℓ t' → t'.spine.2.length ≥ 2) :
   ∀ t'', t ↠ℓ t'' → ¬ t''.IsAbs /\ ¬ t''.BetaNormal := by
   intros t'' g
-  apply leftmost_rtc_cases at g
-  cases g with
+  cases (leftmost_rtc_cases h g) with
   | inl g =>  specialize h _ g
               have h3 := spine_def_2 t''
               generalize heq: t''.spine.2 = l
@@ -468,7 +469,7 @@ theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
               have : t'.LC := by grind
               have : t''.LC := by grind [BetaAt.lc_r]
               have : t.spine.1 ∈ fs := by grind
-              have := steps_leftmost2_preserves_P_r hidempotent h2 hfv g (by grind) (by grind)
+              have := steps_leftmost2_preserves_P_r hidempotent h2 hfv g (by grind)
               have h3 := h2 t'.spine.1 (by grind)
               unfold abs_two_vars_are_enough at h3
               split at h3 <;> try grind
@@ -494,7 +495,7 @@ theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
                           apply normal_app <;> grind
 
 
-theorem bar {fs : Finset (Term String)}
+theorem P_progress_to_simple_spine_or_stuck_nonabs {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
@@ -505,8 +506,7 @@ theorem bar {fs : Finset (Term String)}
              apply leftmost2_neither_abs_nor_beta_normal hidempotent h2 hfv _ ht h
   | inr h =>  left
               obtain ⟨t', h, _⟩ := h
-              exists t'
-              grind
+              refine ⟨t', by grind, steps_leftmost2_preserves_P_r hidempotent h2 hfv h ht, by grind⟩
 
 
 /-
@@ -535,12 +535,23 @@ theorem no_P_reduct {fs : Finset (Term String)}
   | tail _ _ _ => sorry
 -/
 
-theorem exists_leftSpine_reduct {atom : Term String} (h2: atom.two_vars_are_enough) (hfv : atom.fv = ∅) {t}:
-  Gen atom t ->
-  Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")) ->
-  ∃ t', t ↠ℓ t' /\ P fs t' /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1) := by
-  -- grind [no_P_reduct, gen_leftspine]
-  sorry
+theorem exists_leftSpine_reduct {atom : Term String}
+  (h2: atom.abs_two_vars_are_enough)
+  (hfv : atom.fv = ∅)
+  {t}
+  (ht : Gen atom t)
+  (hnormal: Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y"))) :
+  ∃ t', t ↠ℓ t' /\ P atom.subterms t' /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1) := by
+  have h := @P_progress_to_simple_spine_or_stuck_nonabs atom.subterms subterms_idempotent (subterms_two_vars_are_enough (abs_two_vars_are_enough_weak h2)) (subterms_fv hfv) t ?_
+  cases h with
+  | inl h => grind
+  | inr h =>  exfalso
+              obtain ⟨_, _, _⟩ := hnormal
+              sorry
+  rw [<- genfinset_P]
+  apply gen_abs_2_vars_are_enough ht
+  grind
+  apply subterms_two_vars_are_enough (abs_two_vars_are_enough_weak h2)
 
 
 

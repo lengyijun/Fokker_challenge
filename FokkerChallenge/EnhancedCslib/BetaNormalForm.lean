@@ -1,10 +1,8 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
-import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaConfluence
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Congruence
-import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaEtaConfluence
-import FokkerChallenge.EnhancedCslib.CountBvar
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Mathlib.Data.Finset.Lattice.Basic
 
 namespace Cslib
@@ -130,6 +128,37 @@ theorem has_beta_redex_equiv_full_beta {M : Term String} :
     exact ⟨has_beta_redex_of_full_beta hN, FullBeta.step_lc_l hN⟩
 
 theorem normal_fullBeta_iff_no_beta_redex {N}: (N.has_beta_redex = false \/ ¬ N.LC) <-> Relation.Normal FullBeta N := by grind [has_beta_redex_equiv_full_beta]
+
+
+axiom betanormal_iff {M : Term String} : BetaNormal M <-> Relation.Normal FullBeta M
+
+theorem betastar_cases {M N Q : Term String} (h : M.app N ↠βᶠ Q) :
+ (∃ M' N', M ↠βᶠ M' /\ N ↠βᶠ N' /\ Q = M'.app N') \/ ∃ M', M ↠βᶠ Term.abs M' :=  by
+  induction h with
+  | refl => grind
+  | tail _ g ih => cases ih with
+    | inr h => grind
+    | inl h => cases g with grind
+
+
+theorem betastar_of_non_abs {M N : Term String} (hm : ∀ M', M ↠βᶠ M' -> M'.IsAbs -> False) :
+  ∀ Q, M.app N ↠βᶠ Q -> ∃ M' N', M ↠βᶠ M' /\ N ↠βᶠ N' /\ Q = M'.app N' :=  by
+  grind [betastar_cases]
+
+theorem normalizable_app_implies_normalizable_or_reduces_to_abs {M N : Term String} (h : Relation.Normalizable FullBeta (Term.app M N)) (hn : N.LC):
+  Relation.Normalizable FullBeta M \/ ∃ M', M'.IsAbs /\ M ↠βᶠ M' := by
+  by_contra hcontra
+  simp at hcontra
+  obtain ⟨hm, _⟩ := hcontra
+  obtain ⟨Q, h, g⟩ := h
+  obtain ⟨M', N', hmm', _, _⟩ := @betastar_of_non_abs M N (by grind) Q h
+  apply g
+  obtain ⟨M'', h⟩ := hm M' hmm'
+  exists M''.app N'
+  subst Q
+  apply Xi.appR
+  . grind [FullBeta.steps_lc_or_rfl]
+  . grind
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
