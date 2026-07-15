@@ -132,33 +132,44 @@ theorem normal_fullBeta_iff_no_beta_redex {N}: (N.has_beta_redex = false \/ ¬ N
 
 axiom betanormal_iff {M : Term String} : BetaNormal M <-> Relation.Normal FullBeta M
 
-theorem betastar_cases {M N Q : Term String} (h : M.app N ↠βᶠ Q) :
- (∃ M' N', M ↠βᶠ M' /\ N ↠βᶠ N' /\ Q = M'.app N') \/ ∃ M', M ↠βᶠ Term.abs M' :=  by
+theorem leftstar_cases {M N Q : Term String} (h : M.app N ↠ℓ Q) :
+ (∃ M' N', M ↠ℓ M' /\ N ↠ℓ N' /\ Q = M'.app N') \/ ∃ M', M ↠ℓ Term.abs M' :=  by
   induction h with
   | refl => grind
   | tail _ g ih => cases ih with
     | inr h => grind
-    | inl h => cases g with grind
+    | inl h =>  unfold Leftmost at g
+                generalize hq : 0 = Q
+                rw [hq] at g
+                cases g with
+                | outer _ _ => grind
+                | abs xs _ => grind
+                | appL _ => split at hq <;> grind
+                | appR g => split at hq <;> try grind
+                            rename_i i _ _ _ _ _
+                            have : i = 0 := by omega
+                            subst i
+                            grind
 
 
-theorem betastar_of_non_abs {M N : Term String} (hm : ∀ M', M ↠βᶠ M' -> M'.IsAbs -> False) :
-  ∀ Q, M.app N ↠βᶠ Q -> ∃ M' N', M ↠βᶠ M' /\ N ↠βᶠ N' /\ Q = M'.app N' :=  by
-  grind [betastar_cases]
+theorem betastar_of_non_abs {M N : Term String} (hm : ∀ M', M ↠ℓ M' -> M'.IsAbs -> False) :
+  ∀ Q, M.app N ↠ℓ Q -> ∃ M' N', M ↠ℓ M' /\ N ↠ℓ N' /\ Q = M'.app N' :=  by
+  grind [leftstar_cases]
 
-theorem normalizable_app_implies_normalizable_or_reduces_to_abs {M N : Term String} (h : Relation.Normalizable FullBeta (Term.app M N)) (hn : N.LC):
-  Relation.Normalizable FullBeta M \/ ∃ M', M'.IsAbs /\ M ↠βᶠ M' := by
+theorem normalizable_app_implies_normalizable_or_reduces_to_abs {M N : Term String}
+  (h : Relation.Normalizable Leftmost (Term.app M N)):
+  Relation.Normalizable Leftmost M \/ ∃ M', M'.IsAbs /\ M ↠ℓ M' := by
   by_contra hcontra
   simp at hcontra
   obtain ⟨hm, _⟩ := hcontra
   obtain ⟨Q, h, g⟩ := h
+  have g_back := g
   obtain ⟨M', N', hmm', _, _⟩ := @betastar_of_non_abs M N (by grind) Q h
-  apply g
+  apply g_back
   obtain ⟨M'', h⟩ := hm M' hmm'
   exists M''.app N'
   subst Q
-  apply Xi.appR
-  . grind [FullBeta.steps_lc_or_rfl]
-  . grind
+  apply BetaAt.appNoAbsL <;> grind
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 

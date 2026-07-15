@@ -540,7 +540,7 @@ theorem exists_leftSpine_reduct {atom : Term String}
   (hfv : atom.fv = ∅)
   {t}
   (ht : Gen atom t)
-  (hnormal: Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y"))) :
+  (hnormal: Relation.Normalizable Leftmost ((t.app (fvar "x")).app (fvar "y"))) :
   ∃ t', t ↠ℓ t' /\ P atom.subterms t' /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1) := by
   have h := @P_progress_to_simple_spine_or_stuck_nonabs atom.subterms subterms_idempotent (subterms_two_vars_are_enough (abs_two_vars_are_enough_weak h2)) (subterms_fv hfv) t ?_
   cases h with
