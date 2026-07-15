@@ -220,12 +220,12 @@ def P (fs : Finset (Term String)) (t : Term String) : Prop :=
   h ∈ fs /\ ∀ x ∈ args, GenFinset fs x
 
 
+/-
 @[scoped grind]
 inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
   | singleton : ∀ t ∈ fs, leftSpine fs t
   | leftApp   : ∀ t1 ∈ fs, ∀ t2, GenFinset fs t2 → leftSpine fs (t1.app t2)
 
-/-
 theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term String} {l}
   (h : GenFinset fs ((a :: b :: l).foldl Term.app f.abs.abs)):
   ((a :: b :: l).foldl Term.app f.abs.abs) ⭢ℓ t'  ->
@@ -258,6 +258,14 @@ lemma steps_lc_r {M M' : Term String} (redex : M ↠ℓℓ  M') : LC M -> LC M' 
 
 theorem leftmost_rtc_cases {M N} (h : M ↠ℓ N) : M ↠ℓℓ N \/ ∃ Q, M ↠ℓℓ Q /\ Q ⭢ℓ N := by
   induction h with grind [Leftmost2]
+
+@[scoped grind]
+theorem leftmostMulti_to_multi {M N} (h : M ↠ℓℓ N) : M ↠ℓ N := by
+  induction h with
+  | refl => grind
+  | tail h1 h2 h3 =>  cases h2 with | base h4 h5 =>
+                      refine .trans h3 (.trans (.single h4) (.single h5))
+
 
 @[scoped grind]
 theorem genfinset_P {fs : Finset (Term String)}
@@ -346,7 +354,7 @@ theorem step_leftmost2_preserves_P_r {fs : Finset (Term String)}
   (step : t ⭢ℓℓ t')
   (pt: P fs t)
   (ht': t'.spine.2.length ≥ 1) :
-  P fs t' /\ t.spine.2.length ≥ 2 := by
+  P fs t' := by
   cases t with
   | bvar _ => grind
   | fvar _ => grind
@@ -357,13 +365,11 @@ theorem step_leftmost2_preserves_P_r {fs : Finset (Term String)}
   | app M _ => cases M with
     | bvar _ => grind
     | fvar _ => grind
-    | app _ _ =>  constructor
-                  . apply leftmost2_preserves_P_l
-                    any_goals grind
-                    · exact step
-                    · grind
-                    · grind
-                  . grind
+    | app _ _ =>  apply leftmost2_preserves_P_l
+                  any_goals grind
+                  · exact step
+                  · grind
+                  · grind
     | abs _ =>  cases pt with | intro left right =>
                 specialize h2 _ left
                 unfold abs_two_vars_are_enough at h2
@@ -387,13 +393,34 @@ theorem steps_leftmost2_preserves_P_r {fs : Finset (Term String)}
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
   {t t': Term String}
-  (steps : Relation.TransGen Leftmost2 t t')
+  (steps : Relation.ReflTransGen Leftmost2 t t')
   (pt: P fs t)
   (ht': t'.spine.2.length ≥ 1) :
-  P fs t' /\ t.spine.2.length ≥ 2 := by
-  induction steps using Relation.TransGen.head_induction_on with
-  | single => grind [step_leftmost2_preserves_P_r]
-  | head h' h ih => grind [step_leftmost2_preserves_P_r]
+  P fs t' := by
+  induction steps with
+  | refl => grind
+  | tail htb hbd ih =>
+    rename_i b d
+    cases hbd with | base hbc hcd =>
+    rename_i c
+    cases b with
+    | fvar _ => unfold Leftmost at hbc
+                generalize hq : 0 = Q
+                rw [hq] at hbc
+                cases hbc
+    | bvar _ => unfold Leftmost at hbc
+                generalize hq : 0 = Q
+                rw [hq] at hbc
+                cases hbc
+    | abs _ =>  unfold Leftmost at hbc hcd
+                generalize hq : 0 = Q
+                rw [hq] at hbc hcd
+                cases hbc
+                cases hcd
+                grind
+    | app _ _ =>  specialize ih (by grind)
+                  refine step_leftmost2_preserves_P_r hidempotent h2 hfv ?_ ih ht'
+                  constructor <;> assumption
 
 theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
@@ -437,54 +464,50 @@ theorem leftmost2_neither_abs_nor_beta_normal {fs : Finset (Term String)}
               rw [<- h3] at g2
               have : GenFinset fs t := by grind
               have : P fs t := by grind
-              -- have : P fs t' := steps_leftmost2_preserves_P hidempotent h2 hfv
-              -- have : GenFinset fs t' := by grind
               have : t.LC := by grind
               have : t'.LC := by grind
               have : t''.LC := by grind [BetaAt.lc_r]
               have : t.spine.1 ∈ fs := by grind
-              rw [Relation.reflTransGen_iff_eq_or_transGen] at g
-              cases g with
-              | inl h =>  subst t'
-                          have h3 := h2 t.spine.1 (by grind)
-                          unfold abs_two_vars_are_enough at h3
-                          split at h3 <;> try grind
-                          rename_i heq
-                          rw [heq] at g2
-                          rename_i t
-                          have : GenFinset fs a := by grind
-                          have h4 := leftmost_multiapp t.abs a (b :: l) (by grind) (by grind)
-                          have heq := BetaAt.unique h4 g2
-                          constructor
-                          . induction l using List.reverseRecOn with grind [IsAbs, BetaNormal]
-                          .
-                            induction l using List.reverseRecOn with
-                            | nil =>  intro hnormal
-                                      unfold List.foldl at heq
-                                      unfold List.foldl at heq
-                                      unfold open' openRec at heq
-                                      subst t''
-                                      apply BetaNormal.app_inv at hnormal
-                                      grind
-                            | append_singleton l a _ =>
-                                      unfold List.foldl at heq
-                                      rw [List.foldl_concat] at heq
-                                      apply normal_app <;> grind
-              | inr h => sorry
-
-
+              have := steps_leftmost2_preserves_P_r hidempotent h2 hfv g (by grind) (by grind)
+              have h3 := h2 t'.spine.1 (by grind)
+              unfold abs_two_vars_are_enough at h3
+              split at h3 <;> try grind
+              rename_i heq
+              rw [heq] at g2
+              rename_i t
+              have : GenFinset fs a := by grind
+              have h4 := leftmost_multiapp t.abs a (b :: l) (by grind) (by grind)
+              have heq := BetaAt.unique h4 g2
+              constructor
+              . induction l using List.reverseRecOn with grind [IsAbs, BetaNormal]
+              . induction l using List.reverseRecOn with
+                | nil =>  intro hnormal
+                          unfold List.foldl at heq
+                          unfold List.foldl at heq
+                          unfold open' openRec at heq
+                          subst t''
+                          apply BetaNormal.app_inv at hnormal
+                          grind
+                | append_singleton l a _ =>
+                          unfold List.foldl at heq
+                          rw [List.foldl_concat] at heq
+                          apply normal_app <;> grind
 
 
 theorem bar {fs : Finset (Term String)}
+  (hidempotent : idempotent fs)
   (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
   (hfv : ∀ t ∈ fs, t.fv = ∅)
-  {t} (ht: GenFinset fs t)
-  : (∃ t', t ↠ℓ t' /\ leftSpine fs t') \/ (∀ t', t ↠ℓ t' -> ¬ IsAbs t' /\ ¬ BetaNormal t') := by
-  induction ht with
-  | base atom _ =>  left
-                    exists atom
-                    grind
-  | app _ _ _ _ => sorry
+  {t} (ht: P fs t)
+  : (∃ t', t ↠ℓ t' /\ P fs t /\ (t'.spine.2.length = 0 ∨ t'.spine.2.length = 1)) \/ (∀ t', t ↠ℓ t' -> ¬ IsAbs t' /\ ¬ BetaNormal t') := by
+  cases size_dichotomy t with
+  | inl h => right
+             apply leftmost2_neither_abs_nor_beta_normal hidempotent h2 hfv _ ht h
+  | inr h =>  left
+              obtain ⟨t', h, _⟩ := h
+              exists t'
+              grind
+
 
 /-
 theorem no_P_reduct {fs : Finset (Term String)}
