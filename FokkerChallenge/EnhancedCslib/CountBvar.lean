@@ -251,7 +251,7 @@ theorem xi_preserves_count_bvar_all_eq_0 {R: Term String → Term String → Pro
                     rw [h2] at h ih
                     specialize h9 _ _ h
                     simp at ih
-                    specialize ih hm
+                    specialize ih (by grind)
                     have g: count_bvar 0 N = 0 \/ count_bvar 0 N > 0 := by omega
                     cases g with
                     | inl g => grind
