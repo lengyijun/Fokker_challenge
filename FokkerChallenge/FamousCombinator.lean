@@ -25,3 +25,9 @@ abs (abs (abs (
   M = λx.x x
 -/
 def M : Term String := abs (app (bvar 0) (bvar 0))
+
+-- H0xy       = x(yy)
+-- H(n + 1)xy = x(y(Hn))
+def H : Nat -> Term String
+| 0 => ((bvar 1).app ((bvar 0).app (bvar 0))).abs.abs
+| .succ n => ((bvar 1).app ((bvar 0).app (H n))).abs.abs
