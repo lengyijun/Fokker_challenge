@@ -1,9 +1,9 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
--- import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.MultiApp
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
+import FokkerChallenge.FamousCombinator
 import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import Mathlib.Data.Finset.Basic
@@ -562,6 +562,20 @@ theorem exists_leftSpine_reduct {atom : Term String}
   apply subterms_two_vars_are_enough (abs_two_vars_are_enough_weak h2)
 
 
+-- this should be trival
+-- I am blocked by next theorems
+theorem exists_leftSpine_reduct2 {fs : Finset (Term String)}
+  (hidempotent : idempotent fs)
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  (hfv : ∀ t ∈ fs, t.fv = ∅)
+  {t} (ht: P fs t)
+  {t head : Term String}
+  (hh : head ∈ fs)
+  (ht : GenFinset fs t)
+  (hnormal: Relation.ReflTransGen Leftmost (((head.app t).app (fvar "x")).app (fvar "y"))
+                                           (((fvar "x").app (fvar "y")).app (H 100))) :
+  ∃ head' t', head' ∈ fs /\ ((head.app t).app (fvar "x")) ↠ℓ head'.app t' /\ P fs t' := by
+  sorry
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
