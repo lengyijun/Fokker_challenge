@@ -11,3 +11,7 @@ namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 def r_preserves (f: Term String -> Bool) (R : Term String → Term String → Prop) : Prop :=
   ∀ M N, R M N → f M → f N
+
+@[scoped grind]
+inductive IsFvar {Var} : Term Var → Prop
+| abs (m : Var) : IsFvar (Term.fvar m)
