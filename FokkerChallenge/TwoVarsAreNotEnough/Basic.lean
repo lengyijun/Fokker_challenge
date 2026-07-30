@@ -163,23 +163,6 @@ theorem gen_abs_2_vars_are_enough {atom M : Term String} (h : Gen atom M) (g : a
             grind
   | app _ _ _ _ => grind
 
-/-
-theorem genFinset_list (fs : Finset (Term String))
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough) {t} (ht: GenFinset fs t) :
-  ∃ (l : List (Term String)) (f : Term String),
-    t = l.foldl Term.app (f.abs.abs) /\
-    f.abs.abs ∈ fs /\
-    ∀ x ∈ l, GenFinset fs x := by
-  induction ht with
-  | base atom h =>  exists []
-                    specialize h2 _ h
-                    unfold abs_two_vars_are_enough at h2
-                    split at h2 <;> grind
-  | @app M N _ _ ihm ihn =>
-    obtain ⟨l, f, _⟩ := ihm
-    refine ⟨l ++ [N], f, ?_⟩
-    grind
--/
 
 theorem genFinset_open2 (fs : Finset (Term String))
   (h2 :  ∀ t ∈ fs, t.LC)
@@ -233,20 +216,36 @@ def P (fs : Finset (Term String)) (t : Term String) : Prop :=
   h ∈ fs /\ ∀ x ∈ args, GenFinset fs x
 
 
-/-
 @[scoped grind]
-inductive leftSpine (fs : Finset (Term String)) : Term String → Prop where
-  | singleton : ∀ t ∈ fs, leftSpine fs t
-  | leftApp   : ∀ t1 ∈ fs, ∀ t2, GenFinset fs t2 → leftSpine fs (t1.app t2)
+theorem genfinset_P {fs : Finset (Term String)}
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  {t: Term String} :
+  GenFinset fs t <-> P fs t := by
+  constructor
+  . intros h
+    induction h with
+    | base atom _ =>  unfold P
+                      split
+                      rename_i h _ _ _ heq
+                      unfold spine at heq
+                      split at heq <;> grind
+    | app _ _ _ _ => grind
+  . intros h
+    unfold P at h
+    split at h
+    rename_i l _
+    induction t generalizing l with grind
 
-theorem genFinset_of_reduces {fs : Finset (Term String)} {a b f t' t'': Term String} {l}
-  (h : GenFinset fs ((a :: b :: l).foldl Term.app f.abs.abs)):
-  ((a :: b :: l).foldl Term.app f.abs.abs) ⭢ℓ t'  ->
-  t' ⭢ℓ t'' ->
-  GenFinset fs t''
-  := by
-  sorry
--/
+
+@[scoped grind]
+theorem P_fv(fs : Finset (Term String))
+  (hfv : ∀ t ∈ fs, t.fv = ∅)
+  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
+   {t} (ht: P fs t) : t.fv = ∅ := by
+  apply genFinset_fv _ hfv
+  rw [genfinset_P]
+  grind
+  grind
 
 
 
@@ -278,36 +277,6 @@ theorem leftmostMulti_to_multi {M N} (h : M ↠ℓℓ N) : M ↠ℓ N := by
   | tail h1 h2 h3 =>  cases h2 with | base h4 h5 =>
                       refine .trans h3 (.trans (.single h4) (.single h5))
 
-
-@[scoped grind]
-theorem genfinset_P {fs : Finset (Term String)}
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
-  {t: Term String} :
-  GenFinset fs t <-> P fs t := by
-  constructor
-  . intros h
-    induction h with
-    | base atom _ =>  unfold P
-                      split
-                      rename_i h _ _ _ heq
-                      unfold spine at heq
-                      split at heq <;> grind
-    | app _ _ _ _ => grind
-  . intros h
-    unfold P at h
-    split at h
-    rename_i l _
-    induction t generalizing l with grind
-
-@[scoped grind]
-theorem P_fv(fs : Finset (Term String))
-  (hfv : ∀ t ∈ fs, t.fv = ∅)
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
-   {t} (ht: P fs t) : t.fv = ∅ := by
-  apply genFinset_fv _ hfv
-  rw [genfinset_P]
-  grind
-  grind
 
 theorem size_dichotomy (t : Term String) :
     (∀ t', t ↠ℓℓ t' → t'.spine.2.length ≥ 2) ∨
@@ -509,31 +478,6 @@ theorem P_progress_to_simple_spine_or_stuck_nonabs {fs : Finset (Term String)}
               refine ⟨t', by grind, steps_leftmost2_preserves_P_r hidempotent h2 hfv h ht, by grind⟩
 
 
-/-
-theorem no_P_reduct {fs : Finset (Term String)}
-  (h2 :  ∀ t ∈ fs, t.abs_two_vars_are_enough)
-  (hfv : ∀ t ∈ fs, t.fv = ∅) {t}
-  (ht: GenFinset fs t)
-  (hnormal : Relation.Normalizable FullBeta ((t.app (fvar "x")).app (fvar "y")))
-  (hp : ∀ t', t ↠ℓ t' -> P fs t') : False := by
-  obtain ⟨N, h1, h3⟩ := hnormal
-  rw [<- foo] at h3
-  have h4 := Leftmost.normalization (by grind) h1 h3
-  have h: ∀ (t' : Term String), t ↠ℓ t' → (t.app (fvar "x")).app (fvar "y") ↠ℓ (t'.app (fvar "x")).app (fvar "y") := by
-    intros t' _
-    apply Leftmost.steps_app_l_cong
-    apply Leftmost.steps_app_l_cong
-    · grind
-    · specialize hp t' (by assumption)
-      obtain ⟨l, _, _, _, _, _, _⟩ := hp
-      induction l using List.reverseRecOn with grind [IsAbs]
-    · grind [IsAbs]
-  induction h4 with
-  | refl => obtain ⟨_, h3, _⟩ := BetaNormal.app_inv h3
-            obtain ⟨_, h3, _⟩ := BetaNormal.app_inv h3
-            sorry
-  | tail _ _ _ => sorry
--/
 
 theorem exists_leftSpine_reduct {atom : Term String}
   (h2: atom.abs_two_vars_are_enough)
