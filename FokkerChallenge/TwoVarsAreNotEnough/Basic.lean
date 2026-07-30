@@ -255,28 +255,13 @@ axiom BetaAt.step_fv {M N: Term String} {i} : BetaAt i M N -> N.fv ⊆ M.fv
 
 @[reduction_sys "ℓℓ"]
 inductive Leftmost2 : Term String → Term String → Prop
-  | base {M1 M2 M3 N Q} : Leftmost (Term.app (Term.app M1 M2) M3) N ->
-                          Leftmost N Q ->
-                          Leftmost2 (Term.app (Term.app M1 M2) M3) Q
+  | base {M N1 N2: Term String} : Leftmost2 ((M.abs.abs.app N1).app N2) (M⟦1 ↝ N1⟧⟦0 ↝ N2⟧)
+  | appL {N M1 M2: Term String} : Leftmost2 M1 M2 -> Leftmost2 (M1.app N) (M2.app N)
+  | appR {N M1 M2: Term String} : Leftmost2 M1 M2 -> Leftmost2 (N.abs.app M1) (N.abs.app M2)
+
 
 @[scoped grind]
 axiom Leftmost2.steps_fv {M N: Term String} : Relation.ReflTransGen Leftmost2 M N -> N.fv ⊆ M.fv
-
-lemma step_lc_r {M M' : Term String} (redex : M ⭢ℓℓ M') : LC M -> LC M' := by
-  cases redex
-  grind [BetaAt.lc_r]
-
-@[scoped grind]
-lemma steps_lc_r {M M' : Term String} (redex : M ↠ℓℓ  M') : LC M -> LC M' := by
-  induction redex with grind [step_lc_r]
-
-@[scoped grind]
-theorem leftmostMulti_to_multi {M N} (h : M ↠ℓℓ N) : M ↠ℓ N := by
-  induction h with
-  | refl => grind
-  | tail h1 h2 h3 =>  cases h2 with | base h4 h5 =>
-                      refine .trans h3 (.trans (.single h4) (.single h5))
-
 
 theorem size_dichotomy (t : Term String) :
     (∀ t', t ↠ℓℓ t' → t'.spine.2.length ≥ 2) ∨
@@ -289,6 +274,22 @@ theorem size_dichotomy (t : Term String) :
     intro t' hstep
     by_contra hcon
     exact h ⟨t', hstep, by omega⟩
+
+/-
+lemma step_lc_r {M M' : Term String} (redex : M ⭢ℓℓ M') : LC M -> LC M' := by
+  cases redex
+  grind
+
+@[scoped grind]
+lemma steps_lc_r {M M' : Term String} (redex : M ↠ℓℓ  M') : LC M -> LC M' := by
+  induction redex with grind
+
+@[scoped grind]
+theorem leftmostMulti_to_multi {M N} (h : M ↠ℓℓ N) : M ↠βᶠ N := by
+  induction h with
+  | refl => grind
+  | tail h1 h2 h3 =>  cases h2 with
+
 
 theorem leftmost2_preserves_P_l {fs : Finset (Term String)}
   (hidempotent : idempotent fs)
@@ -520,6 +521,7 @@ theorem exists_leftSpine_reduct2 {fs : Finset (Term String)}
                                            (((fvar "x").app (fvar "y")).app (H 100))) :
   ∃ head' t', head' ∈ fs /\ ((head.app t).app (fvar "x")) ↠ℓ head'.app t' /\ P fs t' := by
   sorry
+-/
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
