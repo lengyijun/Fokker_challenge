@@ -253,13 +253,39 @@ axiom BetaAt.unique {M N Q: Term String} {i} : BetaAt i M N -> BetaAt i M Q -> N
 
 axiom BetaAt.step_fv {M N: Term String} {i} : BetaAt i M N -> N.fv ⊆ M.fv
 
-@[reduction_sys "ℓℓ"]
-inductive Leftmost2 : Term String → Term String → Prop
-  | base {M N1 N2: Term String} : Leftmost2 ((M.abs.abs.app N1).app N2) (M⟦1 ↝ N1⟧⟦0 ↝ N2⟧)
-  | appL {N M1 M2: Term String} : Leftmost2 M1 M2 -> Leftmost2 (M1.app N) (M2.app N)
-  | appR {N M1 M2: Term String} : Leftmost2 M1 M2 -> Leftmost2 (N.abs.app M1) (N.abs.app M2)
+@[reduction_sys "h"]
+inductive HeadReduction : Term String → Term String → Prop
+  | base {M N1 N2: Term String} : HeadReduction ((M.abs.abs.app N1).app N2) (M⟦1 ↝ N1⟧⟦0 ↝ N2⟧)
+  | appL {N M1 M2: Term String} : HeadReduction M1 M2 -> HeadReduction (M1.app N) (M2.app N)
+
+/-
+inductive unroll : Term String → Term String → Prop
+  | base {M N: Term String} : Relation.ReflTransGen HeadReduction M N -> unroll M N
+  | app {M N1 N2: Term String} : Relation.ReflTransGen HeadReduction M (N1.abs.app N2) -> unroll M N2
+  | trans {M M' M'' : Term String} : unroll M M' -> unroll M' M'' -> unroll M M''
+-/
+
+inductive unroll_inner : Term String → Term String → Prop
+  | app {M N1 N2: Term String} : Relation.ReflTransGen HeadReduction M (N1.abs.app N2) -> unroll_inner M N2
+
+def unroll : Term String → Term String → Prop := Relation.ReflTransGen unroll_inner
+
+theorem unroll_def {M N : Term String} : unroll M N ->
+  ∃ (l : List (Term String)), M = l.foldl Term.app N /\ ∀ x ∈ l, x.depth <= M.depth := by
+  sorry
+
+def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠ℓ ((fvar "x").app Y)
+
+inductive ClosedUnderApp (P: Term String -> Prop): Term String -> Prop where
+  | base {a}: P a -> ClosedUnderApp P a
+  | app {a b}: ClosedUnderApp P a -> ClosedUnderApp P b -> ClosedUnderApp P (.app a b)
+
+def Q (n: Nat) (mx a: Term String) : Prop := a = (fvar "y") \/ unroll mx a \/ a.depth < n
+
+def T (a: Term String) : Prop := a = (fvar "y") \/ a = (fvar "x") \/ a.abs_two_vars_are_enough
 
 
+/-
 @[scoped grind]
 axiom Leftmost2.steps_fv {M N: Term String} : Relation.ReflTransGen Leftmost2 M N -> N.fv ⊆ M.fv
 
@@ -275,7 +301,6 @@ theorem size_dichotomy (t : Term String) :
     by_contra hcon
     exact h ⟨t', hstep, by omega⟩
 
-/-
 lemma step_lc_r {M M' : Term String} (redex : M ⭢ℓℓ M') : LC M -> LC M' := by
   cases redex
   grind
