@@ -1,14 +1,17 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.ListFullBeta
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaConfluence
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
 import FokkerChallenge.FamousCombinator
 import FokkerChallenge.EnhancedCslib.Basic
+import FokkerChallenge.EnhancedCslib.FlipApp
 import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.Closedunderapp
+import FokkerChallenge.EnhancedCslib.List
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -105,13 +108,42 @@ theorem subterms_preserved_under_openRec {x i t} (h : two_vars_are_enough t) :
     | abs t => cases t with grind
 
 @[scoped grind =]
+theorem two_vars_are_enough_fv {t} (h: two_vars_are_enough t) : t.fv = ∅ := by
+  induction h : t.fokker_size using Nat.strong_induction_on generalizing t with
+    | h n _ => cases t with
+  | bvar _ => grind
+  | fvar _ => grind
+  | app _ _ => grind
+  | abs t => induction t with grind
+
+theorem two_vars_are_enough_depth {M N1 N2: Term String}
+  (hm : M.two_vars_are_enough)
+  (h1 : N1.LC) (h2 : N2.LC) :
+  M⟦1 ↝ N1⟧⟦0 ↝ N2⟧.depth <= M.depth.max (N1.depth.max N2.depth) := by
+  induction h : M.fokker_size using Nat.strong_induction_on generalizing M with | h n ih =>
+  cases M with
+  | fvar _ => grind
+  | bvar _ => grind
+  | abs M => cases M <;> grind
+  | app a b =>
+      have := @ih _ (by grind) a (by grind) rfl
+      have := @ih _ (by grind) b (by grind) rfl
+      rw [openRec_app, openRec_app]
+      grind
+
+@[scoped grind =]
 def abs_two_vars_are_enough: Term String → Bool
   | Term.abs (Term.abs t) => two_vars_are_enough t
   | _ => false
 
-theorem abs_two_vars_are_enough_weak {t} (h: abs_two_vars_are_enough t) : t.two_vars_are_enough := by
+theorem abs_two_vars_are_enough_weak {t} (h: abs_two_vars_are_enough t) :
+  t.two_vars_are_enough := by
   unfold abs_two_vars_are_enough at h
   grind
+
+@[scoped grind =]
+theorem abs_two_vars_are_enough_fv {t} (h: abs_two_vars_are_enough t) : t.fv = ∅ :=
+  two_vars_are_enough_fv (abs_two_vars_are_enough_weak h)
 
 @[scoped grind]
 theorem abs_two_vars_are_enough_lc {t} (h: abs_two_vars_are_enough t) : t.LC := by
@@ -378,6 +410,91 @@ theorem foldl_multiapp_cases {f M : Term String} {l : List (Term String)}
 
 
 @[scoped grind]
+def fvar_or_combinator (a: Term String) : Prop :=  a.IsFvar \/ a.abs_two_vars_are_enough
+
+
+theorem two_vars_are_enough_openRec {t N1 N0}
+  (g : two_vars_are_enough t)
+  (h1: ClosedUnderApp fvar_or_combinator N1)
+  (h2: ClosedUnderApp fvar_or_combinator N0) :
+  ClosedUnderApp fvar_or_combinator (t⟦1 ↝ N1⟧⟦0 ↝ N0⟧) := by
+  induction t with
+  | fvar _ => grind
+  | app _ _ => grind
+  | abs t => cases t <;> grind
+  | bvar a => unfold two_vars_are_enough at g
+              have h : a = 0 \/ a = 1 := by grind
+              cases h <;> subst_vars
+              . grind
+              . simp [openRec]
+                rw [open_lc] <;> grind
+
+theorem step_headReduction_2_vars_are_enough {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (hmn : HeadReduction M N):
+  ClosedUnderApp fvar_or_combinator N := by
+  induction hmn with
+  | appL _ _ => grind
+  | base => cases hm with
+  | base _ => grind
+  | app hm _ => cases hm with
+  | base _ => grind
+  | app hm _ => cases hm with
+  | base hm => cases hm with
+  | inl h => grind
+  | inr h =>  unfold abs_two_vars_are_enough at h
+              split at h <;> try grind
+              rename_i heq
+              cases heq
+              apply two_vars_are_enough_openRec <;> assumption
+
+theorem steps_headReduction_fvar_or_combinator {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (steps : Relation.ReflTransGen HeadReduction M N):
+  ClosedUnderApp fvar_or_combinator N := by
+  induction steps with
+  | refl => grind
+  | tail _ _ _ => grind [step_headReduction_2_vars_are_enough]
+
+theorem HeadReduction.step_depth {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : HeadReduction M N) :
+  N.depth <= M.depth := by
+  induction h with
+  | base =>
+    cases hm with
+    | base _ => grind
+    | app hm _ => cases hm with
+    | base _ => grind
+    | app hm _ => cases hm with | base hm => cases hm with
+    | inl h => grind
+    | inr h =>  unfold abs_two_vars_are_enough at h
+                split at h <;> try grind
+                rename_i heq
+                cases heq
+                rename_i N1 N2 _ _ _
+                have := @two_vars_are_enough_depth _ N1 N2 h (by grind) (by grind)
+                simp_all
+                grind
+  | appL _ ih =>
+    cases hm with
+    | base _ => grind
+    | app _ _ =>
+    specialize ih (by assumption)
+    simp_all
+    grind
+
+theorem HeadReduction.steps_depth {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : Relation.ReflTransGen HeadReduction M N) :
+  N.depth <= M.depth := by
+  induction h with
+  | refl => grind
+  | tail steps h _ =>
+  have := HeadReduction.step_depth (steps_headReduction_fvar_or_combinator hm steps) h
+  grind
+
+@[scoped grind]
 inductive unroll_inner : Term String → Term String → Prop
   | reflTrans {M N: Term String} : Relation.ReflTransGen HeadReduction M N -> unroll_inner M N
   | throughAbsApp {M N1 N2: Term String} : Relation.ReflTransGen HeadReduction M (N1.abs.app N2) -> unroll_inner M N2
@@ -394,22 +511,84 @@ theorem unroll_lc {M N : Term String}
   | reflTrans h => apply HeadReduction.step_lc_r h ih
   | throughAbsApp h => cases HeadReduction.step_lc_r h ih with | app _ _ => grind
 
-@[scoped grind]
-def fvar_or_combinator (a: Term String) : Prop :=  a.IsFvar \/ a.abs_two_vars_are_enough
-
-theorem unroll_2_vars_are_enough {M N : Term String}
+theorem unroll_fvar_or_combinator {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (hmn : unroll M N):
-  ∃ l: List (Term String), M ↠βᶠ l.foldl app N /\ ∀ x ∈ l, x.abs_two_vars_are_enough := by
+  ClosedUnderApp fvar_or_combinator N := by
+  induction hmn with
+  | refl => grind
+  | tail _ h g => cases h with
+  | reflTrans h => apply steps_headReduction_fvar_or_combinator g h
+  | throughAbsApp h => cases steps_headReduction_fvar_or_combinator g h with grind
+
+theorem unroll_2_vars_are_enough_foldl {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (hmn : unroll M N):
+  ∃ l: List (Term String), M ↠βᶠ l.foldl (flip app) N /\ ∀ x ∈ l, x.abs_two_vars_are_enough := by
   induction hmn with
   | refl => exists []
   | tail g h ih => cases h with
     | reflTrans h =>
-    apply HeadReduction.steps_2_beta at h
-    specialize h (unroll_lc (closedunderapp_lc (by grind) hm) g)
+    have h := HeadReduction.steps_2_beta h (unroll_lc (closedunderapp_lc (by grind) hm) g)
     obtain ⟨l, ih, g⟩ := ih
-    exact ⟨l, .trans ih (steps_multiApp_l h (by grind)), g⟩
-    | throughAbsApp _ => sorry
+    exact ⟨l, .trans ih (steps_flip_app_l h (by grind)), g⟩
+    | throughAbsApp h =>
+    rename_i N
+    have h3 := HeadReduction.steps_2_beta h (unroll_lc (closedunderapp_lc (by grind) hm) g)
+    obtain ⟨l, ih, h2⟩ := ih
+    refine ⟨N.abs :: l, .trans ih (steps_flip_app_l h3 (by grind)), ?_⟩
+    cases steps_headReduction_fvar_or_combinator (unroll_fvar_or_combinator (by grind) g) h with
+    | base _ => grind
+    | app h _ => cases h with | base h => cases h with grind
+
+
+@[scoped grind]
+theorem unroll.depth {M N : Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : unroll M N) :
+  N.depth <= M.depth := by
+  induction h with
+  | refl => grind
+  | tail h hbc _ =>
+    have hb := unroll_fvar_or_combinator (by grind) h
+    cases hbc with
+    | reflTrans hbc => grind [HeadReduction.steps_depth hb hbc]
+    | throughAbsApp hbc =>
+      have := HeadReduction.steps_depth hb hbc
+      simp_all
+      grind
+
+@[scoped grind]
+def T (a: Term String) : Prop :=  a = (fvar "y") \/
+                                  a = (fvar "x") \/
+                                  a.abs_two_vars_are_enough
+
+@[scoped grind]
+def Q (mx a: Term String) : Prop := a = (fvar "y") \/
+                                    unroll mx a \/
+                                    (a.abs_two_vars_are_enough /\ a.depth < mx.depth)
+
+theorem closed_under_app_Q {M t N1 N0}
+  (g : two_vars_are_enough t)
+  (ht :t.depth < M.depth)
+  (h0: ClosedUnderApp (Q M) N0)
+  (h1: ClosedUnderApp (Q M) N1)
+  (hlc: N1.LC) :
+  ClosedUnderApp (Q M) (t⟦1 ↝ N1⟧⟦0 ↝ N0⟧) := by
+  induction h : t.fokker_size using Nat.strong_induction_on generalizing t with | h n ih => cases t with
+  | fvar => grind
+  | abs t => cases t <;> grind
+  | bvar a => unfold two_vars_are_enough at g
+              have h : a = 0 \/ a = 1 := by grind
+              cases h <;> subst_vars
+              . grind
+              . simp [openRec]
+                rw [open_lc] <;> grind
+  | app _ _ =>
+    refine .app ?_ ?_ <;> apply ih
+    any_goals rfl
+    any_goals grind
+    all_goals simp_all
 
 /-
 theorem unroll_def {M N : Term String} : unroll M N ->
@@ -418,25 +597,15 @@ theorem unroll_def {M N : Term String} : unroll M N ->
 -/
 
 @[scoped grind]
-def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠ℓ ((fvar "x").app Y)
+def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠βᶠ ((fvar "x").app Y)
 
-
-@[scoped grind]
-def Q (mx a: Term String) : Prop := a = (fvar "y") \/
-                                    unroll mx a \/
-                                    (a.abs_two_vars_are_enough /\ a.depth < mx.depth)
-
-@[scoped grind]
-def T (a: Term String) : Prop :=  a = (fvar "y") \/
-                                  a = (fvar "x") \/
-                                  a.abs_two_vars_are_enough
 
 theorem closedUnderApp_unroll {M N}
-  (h_secure: head_secure M):
-  ClosedUnderApp T M ->
+  (h_secure: head_secure M)
+  (hm : ClosedUnderApp fvar_or_combinator M):
   (M.app (fvar "x")).app (fvar "y") ↠𝒽 N ->
   ClosedUnderApp (Q (M.app (fvar "x"))) N := by
-  intro _ g
+  intro g
   induction g with
   | refl => refine .app (.base ?_) (by grind)
             right
@@ -458,11 +627,59 @@ theorem closedUnderApp_unroll {M N}
         grind
       . subst_vars
         apply closedunderapp_multiapp_cons (by grind)
-        sorry -- depth
+        cases unroll_fvar_or_combinator (by grind) h4 with
+        | base h => grind
+        | app h _ => cases h with | base h => cases h with
+        | inl h => cases h
+        | inr h =>  simp at h5
+                    obtain ⟨h5, _⟩ := h5
+                    unfold abs_two_vars_are_enough at h
+                    split at h <;> try grind
+                    rename_i heq
+                    cases heq
+                    induction h : f'.fokker_size using Nat.strong_induction_on generalizing f' with | h n _ => cases f' with
+                    | fvar _ => grind
+                    | bvar _ => grind
+                    | app _ _ => grind
+                    | abs f' => cases f' with
+                      | bvar _ => grind
+                      | fvar _ => grind
+                      | app _ _ => grind
+                      | abs f' => rw [open_lc]
+                                  . rw [open_lc]
+                                    . constructor
+                                      right
+                                      right
+                                      have := unroll.depth (by grind) h4
+                                      simp_all
+                                      grind
+                                    . grind
+                                  . grind
       . exfalso
         subst_vars
         obtain ⟨Y, h_secure⟩ := h_secure
-        sorry -- fvar
+        obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
+        have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
+        obtain ⟨_, h1, h2⟩ := confluence_beta h h_secure
+        apply FullBeta.steps_fv at h1
+        conv at h1 =>
+          right
+          unfold fv
+          rw [flip_app_fv]
+          right
+          unfold fv
+        cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
+        | inl h3 => grind
+        | inr h3 => obtain ⟨_, _, _⟩ := FullBeta.steps_fvar_app h2
+                    subst_vars
+                    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+                    rw [<- List.map_eq_replicate_iff] at h5
+                    rw [h5] at h1
+                    have h5 : f'.abs.abs.fv = ∅ := by grind
+                    rw [h5, foldl_union_replicate_empty] at h1
+                    simp [fv] at h1
+                    have h : "x" ∈ ({ "y" } : Finset String) := by grind
+                    grind
     . unfold abs_two_vars_are_enough at h4
       split at h4 <;> try grind
       subst_vars
