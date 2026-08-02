@@ -52,3 +52,30 @@ theorem normal_H {n} : Relation.Normal FullBetaEta (H n) := by
       cases h with grind [H.LC]
     . simp [has_eta_redex]
       cases h with grind [H.LC]
+
+theorem H_succ_reduce {n} : ((H (n + 1)).app (fvar "x")).app (fvar "y") ↠βᶠ ((fvar "x").app ((fvar "y").app (H n))) := by
+    apply Relation.ReflTransGen.head
+    apply Xi.appR
+    grind
+    apply Xi.base
+    apply Beta.beta
+    have : H (n+1) = ((bvar 1).app ((bvar 0).app (H n))).abs.abs := by simp
+    rw [<- this]
+    grind [H.LC]
+    grind
+    refine Relation.ReflTransGen.single (Xi.base ?_)
+    unfold open' openRec openRec openRec
+    rw [openRec_bvar, open_lc]
+    split <;> try grind
+    have : (((fvar "x").app ((bvar 0).app (H n))).open' (fvar "y")) =
+           (((fvar "x").app ((fvar "y").app (H n)))) := by
+      unfold open' openRec openRec
+      rw [openRec_bvar, open_lc]
+      split <;> grind
+      grind [H.LC]
+    rw [<- this]
+    apply Beta.beta
+    apply LC.abs ∅
+    grind [H.LC]
+    grind
+    grind [H.LC]

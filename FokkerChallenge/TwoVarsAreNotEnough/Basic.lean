@@ -691,6 +691,22 @@ theorem closedUnderApp_unroll {M N}
         apply closed_under_app_Q (by assumption) (by grind) (by grind) (by grind)
         exact closedunderapp_lc h9 (h5 a (by grind))
 
+theorem closedUnderApp_reduce_to_H_false {M n}
+  (hdepth : M.depth = n)
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : M ↠βᶠ H n) : False:= by
+  induction n using Nat.strong_induction_on generalizing M with | h n ih =>
+  cases n with
+  | zero => cases Relation.ReflTransGen.cases_head h with
+    | inl h => grind
+    | inr h =>  obtain ⟨N, h, _⟩ := h
+                apply FullBeta.depth0 h hdepth
+  | succ n =>
+  have g := Relation.ReflTransGen.trans (FullBeta.redex_app_l_cong (FullBeta.redex_app_l_cong h (LC.fvar "x")) (LC.fvar "y")) H_succ_reduce
+  -- have := closedUnderApp_unroll (by grind) hm
+  sorry
+
+
 /-
 @[scoped grind]
 axiom Leftmost2.steps_fv {M N: Term String} : Relation.ReflTransGen Leftmost2 M N -> N.fv ⊆ M.fv
