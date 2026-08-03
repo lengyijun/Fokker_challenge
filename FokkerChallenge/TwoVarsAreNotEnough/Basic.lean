@@ -12,6 +12,7 @@ import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.List
+import FokkerChallenge.EnhancedCslib.Spine
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -237,17 +238,6 @@ theorem genFinset_list (fs : Finset (Term String))
   induction l generalizing f with grind
 
 @[scoped grind]
-def spine : Term String → Term String × List (Term String)
-  | Term.app f a => let (h, args) := spine f; (h, args ++ [a])
-  | t            => (t, [])
-
-theorem spine_def {t l f} : spine t = (f, l) -> l.foldl Term.app f = t := by
-  induction t generalizing l f with grind
-
-theorem spine_def_2 (t : Term String) : t.spine.2.foldl Term.app t.spine.1 = t := by
-  induction t with grind
-
-@[scoped grind]
 def P (fs : Finset (Term String)) (t : Term String) : Prop :=
   let (h, args) := spine t
   h ∈ fs /\ ∀ x ∈ args, GenFinset fs x
@@ -271,7 +261,11 @@ theorem genfinset_P {fs : Finset (Term String)}
     unfold P at h
     split at h
     rename_i l _
-    induction t generalizing l with grind
+    induction t generalizing l with
+    | bvar _ => grind only [spine, GenFinset.base]
+    | fvar _ => grind only [spine, GenFinset.base]
+    | abs _ _ => grind only [spine, GenFinset.base]
+    | app _ _ _ _ => grind only [spine, GenFinset.app, = List.mem_append, = List.mem_cons]
 
 
 @[scoped grind]
