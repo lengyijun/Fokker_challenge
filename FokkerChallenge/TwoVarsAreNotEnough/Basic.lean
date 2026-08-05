@@ -593,9 +593,11 @@ theorem unroll_def {M N : Term String} : unroll M N ->
 @[scoped grind]
 def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠βᶠ ((fvar "x").app Y)
 
+@[scoped grind]
+def contain_x (M : Term String) := ∀ Y, M ↠βᶠ Y -> "x" ∈ Y.fv
 
 theorem closedUnderApp_unroll {M N}
-  (h_secure: head_secure M)
+  (h_contain_x : contain_x ((M.app (fvar "x")).app (fvar "y")))
   (hm : ClosedUnderApp fvar_or_combinator M)
   (g : (M.app (fvar "x")).app (fvar "y") ↠𝒽 N):
   ClosedUnderApp (Q (M.app (fvar "x"))) N := by
@@ -650,29 +652,19 @@ theorem closedUnderApp_unroll {M N}
                     . apply h9 _ h7
       . exfalso
         subst_vars
-        obtain ⟨Y, h_secure⟩ := h_secure
         obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
         have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
-        obtain ⟨_, h1, h2⟩ := confluence_beta h h_secure
-        apply FullBeta.steps_fv at h1
-        conv at h1 =>
-          right
-          unfold fv
-          rw [flip_app_fv]
-          right
-          unfold fv
+        have h1 := h_contain_x _ h
+        unfold fv at h1
+        rw [flip_app_fv] at h1
         cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
         | inl h3 => grind
-        | inr h3 => obtain ⟨_, _, _⟩ := FullBeta.steps_fvar_app h2
-                    subst_vars
-                    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+        | inr h3 => have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
                     rw [<- List.map_eq_replicate_iff] at h5
                     rw [h5] at h1
                     have h5 : f'.abs.abs.fv = ∅ := by grind
                     rw [h5, foldl_union_replicate_empty] at h1
                     simp [fv] at h1
-                    have h : "x" ∈ ({ "y" } : Finset String) := by grind
-                    grind
     . unfold abs_two_vars_are_enough at h4
       split at h4 <;> try grind
       subst_vars
