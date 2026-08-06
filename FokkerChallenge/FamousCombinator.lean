@@ -79,3 +79,5 @@ theorem H_succ_reduce {n} : ((H (n + 1)).app (fvar "x")).app (fvar "y") ↠βᶠ
     grind [H.LC]
     grind
     grind [H.LC]
+
+theorem H_fv {n} : (H n).fv = ∅ := by induction n with grind

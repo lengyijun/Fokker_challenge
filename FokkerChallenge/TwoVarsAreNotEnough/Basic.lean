@@ -321,8 +321,16 @@ theorem HeadReduction.steps_2_beta {M N : Term String} (h : Relation.ReflTransGe
                   grind
       | inr h => grind
 
+theorem HeadReduction.unique {M N Z : Term String}
+  (m_lc : M.LC)
+  (h1 : HeadReduction M N)
+  (h2 : HeadReduction M Z): N = Z := by
+  have := HeadReduction.step_2_leftmost h1 m_lc
+  have := HeadReduction.step_2_leftmost h2 m_lc
+  grind [BetaAt.unique]
+
 theorem HeadReduction.step_lc_r {M N : Term String}
-  (h : Relation.ReflTransGen HeadReduction M N)
+  (h : HeadReduction M N)
   (m_lc : M.LC) : N.LC := by
   grind [HeadReduction.steps_2_beta, FullBeta.steps_lc_or_rfl]
 
@@ -489,8 +497,8 @@ theorem HeadReduction.steps_depth {M N : Term String}
 
 @[scoped grind]
 inductive unroll_inner : Term String → Term String → Prop
-  | reflTrans {M N: Term String} : Relation.ReflTransGen HeadReduction M N -> unroll_inner M N
-  | throughAbsApp {M N1 N2: Term String} : Relation.ReflTransGen HeadReduction M (N1.abs.app N2) -> unroll_inner M N2
+  | reflTrans {M N: Term String} : HeadReduction M N -> unroll_inner M N
+  | throughAbsApp {N1 N2: Term String} : unroll_inner (N1.abs.app N2) N2
 
 @[scoped grind]
 def unroll : Term String → Term String → Prop := Relation.ReflTransGen unroll_inner
@@ -502,7 +510,7 @@ theorem unroll.LC {M N : Term String}
   | refl => grind
   | tail _ h ih => cases h with
   | reflTrans h => apply HeadReduction.step_lc_r h ih
-  | throughAbsApp h => cases HeadReduction.step_lc_r h ih with | app _ _ => grind
+  | throughAbsApp => cases ih with grind
 
 theorem unroll_fvar_or_combinator {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
@@ -511,8 +519,8 @@ theorem unroll_fvar_or_combinator {M N : Term String}
   induction hmn with
   | refl => grind
   | tail _ h g => cases h with
-  | reflTrans h => apply steps_headReduction_fvar_or_combinator g h
-  | throughAbsApp h => cases steps_headReduction_fvar_or_combinator g h with grind
+  | reflTrans h => apply steps_headReduction_fvar_or_combinator g (.single h)
+  | throughAbsApp => cases g with grind
 
 @[scoped grind]
 theorem unroll.depth {M N : Term String}
@@ -524,11 +532,8 @@ theorem unroll.depth {M N : Term String}
   | tail h hbc _ =>
     have hb := unroll_fvar_or_combinator (by grind) h
     cases hbc with
-    | reflTrans hbc => grind [HeadReduction.steps_depth hb hbc]
-    | throughAbsApp hbc =>
-      have := HeadReduction.steps_depth hb hbc
-      simp_all
-      grind
+    | reflTrans hbc => grind [HeadReduction.step_depth hb hbc]
+    | throughAbsApp => simp_all
 
 theorem unroll_2_vars_are_enough_foldl {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
@@ -539,33 +544,41 @@ theorem unroll_2_vars_are_enough_foldl {M N : Term String}
             grind
   | tail g h ih => cases h with
     | reflTrans h =>
-    have h := HeadReduction.steps_2_beta h (unroll.LC g (closedunderapp_lc (by grind) hm))
+    have h := HeadReduction.step_2_beta h (unroll.LC g (closedunderapp_lc (by grind) hm))
     obtain ⟨l, ih, g⟩ := ih
     exact ⟨l, .trans ih (steps_flip_app_l h (by grind)), g⟩
-    | throughAbsApp h =>
+    | throughAbsApp =>
     rename_i N
-    have h3 := HeadReduction.steps_2_beta h (unroll.LC g (closedunderapp_lc (by grind) hm))
     obtain ⟨l, ih, h2⟩ := ih
-    refine ⟨N.abs :: l, .trans ih (steps_flip_app_l h3 (by grind)), ?_⟩
-    cases steps_headReduction_fvar_or_combinator (unroll_fvar_or_combinator (by grind) g) h with
-    | base _ => grind
-    | app h _ => cases h with | base h => cases h with
-    | inl => grind
-    | inr h5 => intros x hx
-                cases hx with
-                | tail => apply h2 _ (by tauto)
-                | head as =>
-                  have := unroll.depth hm g
-                  have g := HeadReduction.steps_depth (unroll_fvar_or_combinator hm g) h
-                  simp at g
-                  constructor
-                  . grind
-                  . simp
-                    omega
+    refine ⟨N.abs :: l, ih, ?_⟩
+    intros x hx
+    cases hx with
+    | tail => apply h2 _ (by tauto)
+    | head as =>
+      have h := unroll.depth hm g
+      simp at h
+      constructor
+      . cases unroll_fvar_or_combinator hm g with
+      | base g => cases g <;> grind
+      | app g _ => cases g with | base g => cases g <;> grind
+      . simp
+        omega
 
-/-
-theorem unroll_fvar {M N Z : Term String}
-  (hm : ClosedUnderApp fvar_or_combinator M)
+theorem unroll_inner_eq {M N Z : Term String}
+  (m_lc : M.LC)
+  (hx : unroll_inner M N)
+  (hy : unroll_inner M Z):
+  N = Z := by
+  cases hx <;> cases hy <;> rename_i h
+  . rename_i g
+    have := HeadReduction.unique m_lc h g
+    grind
+  . cases h with | appL h => cases h
+  . cases h with | appL h => cases h
+  . grind
+
+theorem unroll_iff {M N Z : Term String}
+  (m_lc : M.LC)
   (hx : unroll M N)
   (hy : unroll M Z):
   unroll N Z \/ unroll Z N := by
@@ -574,16 +587,27 @@ theorem unroll_fvar {M N Z : Term String}
   | tail _ h ih => cases ih with
   | inr hzb =>  right
                 exact .tail hzb h
-  | inl hbz =>  sorry
+  | inl hbz =>  rcases Relation.ReflTransGen.cases_head hbz with h|⟨_, g, h2⟩
+                . subst_vars
+                  right
+                  refine .single h
+                . have := unroll_inner_eq ?_ h g
+                  subst_vars
+                  left
+                  exact h2
+                  apply unroll.LC (by assumption) m_lc
 
 theorem unroll_fvar {M : Term String} {x y}
-  (hm : ClosedUnderApp fvar_or_combinator M)
+  (m_lc : M.LC)
   (hx : unroll M (fvar x))
   (hy : unroll M (fvar y)): x = y := by
-  have := unroll_2_vars_are_enough_foldl hm hx
-  have := unroll_2_vars_are_enough_foldl hm hy
-  sorry
--/
+  cases unroll_iff m_lc hx hy with
+  | inr h =>  rcases Relation.ReflTransGen.cases_head h with _|⟨_, g, _⟩
+              . grind
+              . cases g with | reflTrans g => cases g
+  | inl h =>  rcases Relation.ReflTransGen.cases_head h with _|⟨_, g, _⟩
+              . grind
+              . cases g with | reflTrans g => cases g
 
 @[scoped grind]
 def T (a: Term String) : Prop :=  a = (fvar "y") \/
@@ -597,7 +621,7 @@ def Q (mx a: Term String) : Prop := a = (fvar "y") \/
 
 theorem Q_lc {M}
   (hm : ClosedUnderApp fvar_or_combinator M):
-  ∀ x, Q (M.app (fvar "x")) x ->  x.LC := by
+  ∀ t, Q (M.app (fvar "x")) t -> t.LC := by
   intros x hx
   rcases hx with hx|hx|hx
   . grind
@@ -615,8 +639,7 @@ theorem closed_under_app_Q {M t N1 N0}
   induction h : t.fokker_size using Nat.strong_induction_on generalizing t with | h n ih => cases t with
   | fvar => grind
   | abs t => cases t <;> grind
-  | bvar a => unfold two_vars_are_enough at g
-              have h : a = 0 \/ a = 1 := by grind
+  | bvar a => have h : a = 0 \/ a = 1 := by grind
               cases h <;> subst_vars
               . grind
               . simp [openRec]
@@ -710,7 +733,7 @@ theorem closedUnderApp_unroll {M N}
                     have h7 : (M.app (fvar "x")).Q a := by
                       right
                       left
-                      refine .trans h4 (.single (.throughAbsApp .refl))
+                      refine .tail h4 (.throughAbsApp)
                     apply closed_under_app_Q h
                     . have := unroll.depth (by grind) h4
                       simp_all
@@ -788,7 +811,7 @@ theorem closedUnderApp_unroll_z {M N}
                     have h7 : (M.app (fvar "x")).Q a := by
                       right
                       left
-                      refine .trans h4 (.single (.throughAbsApp .refl))
+                      refine .trans h4 (.single (.throughAbsApp))
                     apply closed_under_app_Z h
                     . have := unroll.depth (by grind) h4
                       simp_all
@@ -830,29 +853,16 @@ def U (n : Nat) (a: Term String) : Prop :=
   (a.abs_two_vars_are_enough /\ a.depth < n) \/
   ∃ l : List _, a = l.foldl (flip app) (fvar "z") /\ ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth <= n
 
-lemma union_foldl {l : List _} {fs : Finset String}:
-  fs ⊆ l.foldl Union.union fs := by
-  induction l generalizing fs with grind
-
 theorem closedUnderApp_reduce_to_H_false {M N n}
   (hm : ClosedUnderApp (U n) M)
   (hfv : "z" ∉ N.fv)
   (hmn : unroll M N) :
   ∃ l: List _, M ↠βᶠ l.foldl (flip app) N /\ ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth < n := by
   induction hmn with
-  | refl => cases hm with
-    | app => refine ⟨[], by grind, by grind⟩
-    | base hm =>  rcases hm with _|⟨l, hm, h⟩
-                  . use []; grind
-                  . subst_vars
-                    rw [flip_app_fv] at hfv
-                    exfalso
-                    apply hfv
-                    apply union_foldl
-                    grind
+  | refl => refine ⟨[], by grind, by grind⟩
   | tail _ h _ => cases h with
     | reflTrans _ => sorry
-    | throughAbsApp _ => sorry
+    | throughAbsApp => sorry
 
 
 /-
