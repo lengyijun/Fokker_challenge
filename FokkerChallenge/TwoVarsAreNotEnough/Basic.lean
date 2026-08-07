@@ -855,12 +855,13 @@ def U (n : Nat) (a: Term String) : Prop :=
 
 theorem closedUnderApp_reduce_to_H_false {M N n}
   (hm : ClosedUnderApp (U n) M)
-  (hfv : "z" ∉ N.fv)
-  (hmn : unroll M N) :
-  ∃ l: List _, M ↠βᶠ l.foldl (flip app) N /\ ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth < n := by
+  (hz : unroll N (fvar "z") -> False)
+  (hmn : unroll (M.app (fvar "x")) N) :
+  ∃ l: List _, M.app (fvar "x") ↠βᶠ l.foldl (flip app) N /\
+               ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth < n := by
   induction hmn with
-  | refl => refine ⟨[], by grind, by grind⟩
-  | tail _ h _ => cases h with
+  | refl => exact ⟨[], by grind⟩
+  | tail _ h ih => cases h with
     | reflTrans _ => sorry
     | throughAbsApp => sorry
 
