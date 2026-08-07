@@ -1,26 +1,28 @@
 import Mathlib.Logic.Relation
 
-inductive ReflTransGenWithSteps (r : α → α → Prop) : Nat → α → α → Prop
-  | refl (a : α) : ReflTransGenWithSteps r 0 a a
-  | step {n : Nat} {a b c : α}
-      (h : ReflTransGenWithSteps r n a b) (h' : r b c) :
-      ReflTransGenWithSteps r (n + 1) a c
+namespace Relation
+namespace ReflTransGen
 
-theorem reflTransGenWithSteps_to_ReflTransGen {r : α → α → Prop} {n a b} :
-    ReflTransGenWithSteps r n a b → Relation.ReflTransGen r a b := by
-  intro h
-  induction h with
-  | refl => exact Relation.ReflTransGen.refl
-  | step _ h1 h2 => exact Relation.ReflTransGen.tail h2 h1
-
-/-- **Reverse** of `reflTransGenWithSteps_to_ReflTransGen`:
-    Every `ReflTransGen` chain can be witnessed with an explicit step count. -/
-theorem exists_ReflTransGenWithSteps {r : α → α → Prop} {a b : α}
-    (h : Relation.ReflTransGen r a b) :
-    ∃ n, ReflTransGenWithSteps r n a b := by
-  induction h with
-  | refl =>
-      exact ⟨0, ReflTransGenWithSteps.refl a⟩
-  | tail h' hr ih =>
-      obtain ⟨n, hn⟩ := ih
-      exact ⟨n + 1, ReflTransGenWithSteps.step hn hr⟩
+theorem head_induction_on₂ {motive : ∀ a : α, ReflTransGen r a b → Prop} {a : α}
+    (h : ReflTransGen r a b) (refl : motive b .refl)
+    (single : ∀ {a : α} (h' : r a b), motive a (ReflTransGen.single h'))
+    (head₂ : ∀ {a c d : α} (h₁ : r a c) (h₂ : r c d) (h : ReflTransGen r d b),
+      motive d h → motive a ((h.head h₂).head h₁)) :
+    motive a h := by
+  -- We strengthen the statement so that a single `head_induction_on` suffices: along with
+  -- `motive a h` we also carry the value of the motive at any one-step extension of `h`.
+  have key : ∀ (a : α) (h : ReflTransGen r a b),
+      motive a h ∧ ∀ (z : α) (hz : r z a), motive z (h.head hz) := by
+    intro a h
+    induction h using Relation.ReflTransGen.head_induction_on with
+    | refl => exact ⟨refl, fun _ hz => single hz⟩
+    | @head a c h' hcb ih => exact ⟨ih.2 a h', fun _ hz => head₂ hz h' hcb ih.1⟩
+  exact (key a h).1
+/-- The two-step analogue of `Relation.ReflTransGen.cases_head`: a chain either is empty,
+consists of a single step, or starts with two steps. -/
+theorem cases_head₂ {a : α} (h : ReflTransGen r a b) :
+    a = b ∨ r a b ∨ ∃ c d, r a c ∧ r c d ∧ ReflTransGen r d b := by
+  induction h using Relation.ReflTransGen.head_induction_on₂ with
+  | refl => exact Or.inl rfl
+  | single h' => exact Or.inr (Or.inl h')
+  | head₂ h₁ h₂ h _ => exact Or.inr (Or.inr ⟨_, _, h₁, h₂, h⟩)

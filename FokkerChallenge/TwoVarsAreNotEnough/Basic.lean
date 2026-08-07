@@ -13,6 +13,7 @@ import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.List
 import FokkerChallenge.EnhancedCslib.Spine
+import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -969,6 +970,31 @@ theorem HeadReduction.head_nf_exists {M : Term String} {x : String} {l : List (T
   (hm : ClosedUnderApp fvar_or_combinator M)
   (h : Relation.ReflTransGen Leftmost M (l.foldl app (fvar x))) :
   ∃ l' : List _, Relation.ReflTransGen HeadReduction M (l'.foldl app (fvar x)) := by
+  generalize heq : List.foldl app (fvar x) l = N
+  rw [heq] at h
+  induction h using Relation.ReflTransGen.head_induction_on₂ generalizing l with
+  | refl => grind
+  | single h => subst_vars
+                exfalso
+                sorry
+  | head₂ h₁ h₂ h ih => induction h₁ using Leftmost.induction_rule with
+    | h_outer M N hm hn => cases hm with
+      | base hm => cases hm <;> grind
+      | app hm _ => cases hm with | base hm => cases hm with
+        | inl hm => grind
+        | inr hm => unfold abs_two_vars_are_enough at hm
+                    split at hm <;> try grind
+                    rename_i heq
+                    cases heq
+                    exfalso
+                    sorry
+    | h_appL h hi _ => sorry
+    | h_appR h hi g _ => sorry
+    | h_abs M M' xs h _ => sorry
+
+
+
+  /-
   induction hm generalizing l x with
   | app _ _ _ _ => sorry
   | base hm => cases hm with
@@ -996,6 +1022,7 @@ theorem HeadReduction.head_nf_exists {M : Term String} {x : String} {l : List (T
     . subst_vars
       rw [List.foldl_concat] at g
       cases g
+  -/
 
 /-
 @[scoped grind]
