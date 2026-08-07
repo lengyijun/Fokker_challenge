@@ -24,3 +24,12 @@ lemma flip_app_fv {M} {Ns : List (Term String)}:
       simp [flip]
       specialize @ih (head.app M)
       grind
+
+lemma flip_app_lc {M} {l : List (Term String)}
+  (hm : M.LC)
+  (hl : ∀ x ∈ l, x.LC) :
+  (l.foldl (flip app) M).LC := by
+  induction l generalizing M with
+  | nil => grind
+  | cons head tail ih =>  unfold flip
+                          apply ih <;> grind
