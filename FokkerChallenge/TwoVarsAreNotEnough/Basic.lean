@@ -965,6 +965,38 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
                     grind
 
 
+theorem HeadReduction.head_nf_exists {M : Term String} {x : String} {l : List (Term String)}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : Relation.ReflTransGen Leftmost M (l.foldl app (fvar x))) :
+  ∃ l' : List _, Relation.ReflTransGen HeadReduction M (l'.foldl app (fvar x)) := by
+  induction hm generalizing l x with
+  | app _ _ _ _ => sorry
+  | base hm => cases hm with
+    | inl hm => use []
+                simp
+                cases hm
+                generalize heq : List.foldl app (fvar x) l = N
+                rw [heq] at h
+                rcases Relation.ReflTransGen.cases_head h with h|⟨_, g, h2⟩
+                . rcases (List.eq_nil_or_concat' l) with _| ⟨l, b, h⟩
+                  . grind
+                  . subst_vars
+                    rw [List.foldl_concat] at heq
+                    cases heq
+                . generalize hi : 0 = i
+                  unfold Leftmost at g
+                  rw [hi] at g
+                  cases g
+    | inr hm =>
+    unfold abs_two_vars_are_enough at hm
+    split at hm <;> try grind
+    have g :=  Leftmost.steps_isAbs_r h (by grind)
+    rcases (List.eq_nil_or_concat' l) with _| ⟨l, b, h⟩
+    . grind
+    . subst_vars
+      rw [List.foldl_concat] at g
+      cases g
+
 /-
 @[scoped grind]
 def P (fs : Finset (Term String)) (t : Term String) : Prop :=
