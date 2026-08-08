@@ -1,5 +1,7 @@
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 
 namespace Cslib
 
@@ -77,3 +79,28 @@ lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
   (steps : l.foldl app (fvar x) ↠βᶠ M)  :
   ∃ l': List _, M = l'.foldl app (fvar x) := by
   induction steps with grind [beta_step_preserve_fvar_apps]
+
+lemma beta_normal_of_eta_to_fvar_apps {x M} {l: List (Term String)}
+  (hM : Relation.Normal FullBeta M)
+  (steps : M ↠ηᶠ l.foldl app (fvar x)) :
+  (∃ l': List _, M = l'.foldl app (fvar x)) \/
+  (∃ l': List _, M = ((l'.foldl app (fvar x)).app (bvar 0)).abs) := by
+  generalize heq : l.foldl app (fvar x) = N
+  rw [heq] at steps
+  induction steps using Relation.ReflTransGen.head_induction_on with
+  | refl => grind
+  | head h' h ih =>
+    specialize ih (Etastar_normal (.single h') hM)
+    cases h' with
+    | appL _ _ => sorry
+    | appR _ _ => sorry
+    | abs xs _ => sorry
+    | base h' => cases h' with | eta h' =>
+        rcases ih with _|⟨l, ih⟩
+        . grind
+        . subst_vars
+          exfalso
+          apply hM
+          refine ⟨((List.foldl app (fvar x) l).app (bvar 0)).abs, Xi.abs ∅ fun x hx => .base ?_⟩
+          unfold open' openRec
+          sorry
