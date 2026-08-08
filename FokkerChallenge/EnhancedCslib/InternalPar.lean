@@ -49,6 +49,13 @@ inductive IPar : Term Var → Term Var → Prop
   | abs (xs : Finset Var) {M M' : Term Var} :
       (∀ x ∉ xs, IPar (M ^ Term.fvar x) (M' ^ Term.fvar x)) → IPar (Term.abs M) (Term.abs M')
 
+theorem IPar.not_isAbs {A B : Term Var} (h : IPar A B) (hA : ¬ A.IsAbs) : ¬ B.IsAbs := by
+  cases h with
+  | fvar x => grind
+  | app => grind
+  | appAbs => grind
+  | abs => exact absurd (by grind) hA
+
 /-- An internal parallel reduction is a parallel reduction. -/
 theorem IPar.toParallel {M N : Term Var} (h : IPar M N) : Parallel M N := by
   induction h with
@@ -75,10 +82,6 @@ theorem IPar.headNeutral_back {M N : Term Var} (h : IPar M N) (hn : HeadNeutral 
   | abs xs _ _ => cases hn
 
 variable  [DecidableEq Var]
-
-theorem Term.not_isAbs_subst_fvar {M : Term Var} (h : ¬ M.IsAbs) (x y : Var) :
-    ¬ (M[x:=(Term.fvar y) ]).IsAbs := by
-  cases M <;> grind
 
 theorem IPar.headNF_back {M N : Term Var} (h : IPar M N) (hn : HeadNF N) :
     HeadNF M := by
@@ -128,7 +131,7 @@ theorem IPar.rename {A B : Term Var} (h : IPar A B) (x y : Var) :
     IPar (A[x:=(Term.fvar y)]) (B[x:=(Term.fvar y)]) := by
   induction h with
   | fvar z => by_cases hz : z = x <;> rw [subst_fvar] <;> split <;> exact IPar.fvar _
-  | @app M M' N N' hM _ hN ih => exact IPar.app (Term.not_isAbs_subst_fvar hM x y) ih (hN.rename x y)
+  | @app M M' N N' hM _ hN ih => exact IPar.app (by grind [isAbs_subst_fvar]) ih (hN.rename x y)
   | @appAbs xs M M' N N' hbody hN =>
       refine IPar.appAbs (xs ∪ {x} ∪ {y}) ?_ (hN.rename x y)
       intro z hz

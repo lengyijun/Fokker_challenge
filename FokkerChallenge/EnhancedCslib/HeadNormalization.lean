@@ -46,13 +46,6 @@ variable {Var : Type u}
 
 /-! ### Lifting a head step through an internal parallel reduction -/
 
-theorem IPar.not_isAbs {A B : Term Var} (h : IPar A B) (hA : ¬ A.IsAbs) : ¬ B.IsAbs := by
-  cases h with
-  | fvar x => grind
-  | app => grind
-  | appAbs => grind
-  | abs => exact absurd (by grind) hA
-
 /-- Head reduction from `M` **terminates**: there is no infinite head reduction
 sequence starting at `M`. -/
 def HeadTerminating (M : Term Var) : Prop := Acc (fun a b : Term Var => HeadStep b a) M

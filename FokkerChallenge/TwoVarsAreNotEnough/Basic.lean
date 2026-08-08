@@ -14,6 +14,7 @@ import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.List
 import FokkerChallenge.EnhancedCslib.Spine
 import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
+import FokkerChallenge.EnhancedCslib.HeadRed
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -395,7 +396,7 @@ theorem two_vars_are_enough_openRec {t N1 N0}
               . simp [openRec]
                 rw [open_lc] <;> grind
 
-theorem step_HeadReduction2_2_vars_are_enough {M N : Term String}
+theorem HeadReduction2_preserver_fvar_or_combinator {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (hmn : HeadReduction2 M N):
   ClosedUnderApp fvar_or_combinator N := by
@@ -420,7 +421,7 @@ theorem steps_HeadReduction2_fvar_or_combinator {M N : Term String}
   ClosedUnderApp fvar_or_combinator N := by
   induction steps with
   | refl => grind
-  | tail _ _ _ => grind [step_HeadReduction2_2_vars_are_enough]
+  | tail _ _ _ => grind [HeadReduction2_preserver_fvar_or_combinator]
 
 theorem HeadReduction2.step_depth {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
@@ -965,7 +966,72 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
                     have : "x" ∈ ({"z"} : Finset String) := by grind
                     grind
 
+theorem HeadReduction2.is_headstep {M M' M'': Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h: ¬ M'.IsAbs)
+  (h1 : HeadStep M M')
+  (h2 : HeadStep M' M''):
+  HeadReduction2 M M'' := by
+  induction h1 generalizing M'' with
+  | abs xs _ => cases h2 with | abs xs _ => grind
+  | beta _ _ => cases hm with
+    | base hm => grind
+    | app hm _ => cases hm with | base hm => cases hm with
+      | inl hm => cases hm
+      | inr hm =>
+      unfold abs_two_vars_are_enough at hm
+      split at hm <;> grind
+  | app h5 h4 h3 ih => cases h2 with
+    | app =>  refine .appL ?_
+              apply ih <;> grind
+    | beta h1 h2 =>
+      rename_i M
+      generalize heq : M.abs = N
+      rw [heq] at h4
+      cases h4 with
+      | app => grind
+      | abs => grind
+      | beta _ _ => cases hm with
+        | base => grind
+        | app hm _ => cases hm with
+          | base _ => grind
+          | app hm _ => cases hm with | base hm => cases hm with
+            | inl => grind
+            | inr hm =>
+      unfold abs_two_vars_are_enough at hm
+      split at hm <;> try grind
+      rename_i heq
+      cases heq
+      cases heq
+      exact .base
 
+theorem HeadReduction2.head_nf_exists {M N: Term String}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (hn : N.HeadNeutral)
+  (h : Relation.ReflTransGen HeadStep M N) :
+  Relation.ReflTransGen HeadReduction2 M N := by
+  induction h using Relation.ReflTransGen.head_induction_on₂ with
+  | refl => grind
+  | single h' =>
+    exfalso
+    induction h' with
+    | abs xs _ => grind
+    | app _ _ _ => grind
+    | beta _ _ => cases hm with
+      | base _ => grind
+      | app hm _ => cases hm with | base hm => cases hm with
+        | inl => grind
+        | inr hm => unfold abs_two_vars_are_enough at hm
+                    split at hm <;> grind
+  | head₂ h₁ h₂ h ih =>
+  have g := HeadReduction2.is_headstep hm ?_ h₁ h₂
+  refine .head g (ih (HeadReduction2_preserver_fvar_or_combinator hm g))
+  intros _
+  apply HeadNeutral.not_isAbs hn
+  apply HeadSteps.preserve_isabs h
+  cases h₂ with grind
+
+/-
 theorem HeadReduction2.head_nf_exists {M : Term String} {x : String} {l : List (Term String)}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (h : Relation.ReflTransGen Leftmost M (l.foldl app (fvar x))) :
@@ -991,6 +1057,7 @@ theorem HeadReduction2.head_nf_exists {M : Term String} {x : String} {l : List (
     | h_appL h hi _ => sorry
     | h_appR h hi g _ => sorry
     | h_abs M M' xs h _ => sorry
+-/
 
 
 

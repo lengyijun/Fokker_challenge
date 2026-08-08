@@ -13,7 +13,6 @@ namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 This file introduces, for the locally nameless untyped λ-calculus:
 
-* `Term.IsAbs`  — the predicate "the term is an abstraction";
 * `HeadStep`    — one step of *head* reduction, i.e. contraction of the head
   redex of `λx₁ … xₙ. (λy. P) Q R₁ … Rₖ`;
 * `HeadNeutral` — terms of the form `x R₁ … Rₖ`;
@@ -86,9 +85,7 @@ theorem HeadNeutral.subst [DecidableEq Var] [HasFresh Var] {M : Term Var} {x y: 
     | fvar x => rw [subst_fvar]
                 split <;> grind
     | app _ _ _ =>  rw [subst_app]
-                    constructor
-                    grind
-                    apply subst_lc <;> grind
+                    exact .app (by grind) (subst_lc (by grind) (by grind))
 
 theorem HeadNF.lc {M : Term Var} (h : HeadNF M) : LC M := by
   induction h with
@@ -110,6 +107,14 @@ theorem HeadNF.subst [DecidableEq Var] [HasFresh Var] {M : Term Var} (x y: Var)
       rename_i M
       refine .abs (xs ∪ {x} ∪ {y}) ?_
       grind
+
+theorem HeadStep.preserve_isabs {M N : Term Var} (h : HeadStep M N) :
+    M.IsAbs -> N.IsAbs := by
+    cases h with grind
+
+theorem HeadSteps.preserve_isabs {M N : Term Var} (steps : Relation.ReflTransGen HeadStep M N) :
+    M.IsAbs -> N.IsAbs := by
+    induction steps with grind [HeadStep.preserve_isabs]
 
 /-- A term admitting a head step is either an abstraction or an application. -/
 theorem HeadStep.shape {M N : Term Var} (h : HeadStep M N) :
@@ -147,6 +152,12 @@ theorem HeadNeutral.no_headStep {M N : Term Var} (hM : HeadNeutral M) :
       cases h with
       | beta => exact HeadNeutral.not_isAbs hA (by grind)
       | app _ hstep _ => exact ih hstep
+
+/-- A β-normal form has no head redex, since every head step is a β-step. -/
+theorem BetaNF.no_headStep {M : Term Var} (h : Relation.Normal FullBeta M) :
+                                               Relation.Normal HeadStep M  := by
+  rintro ⟨N, hN⟩
+  apply h ⟨N, hN.toFullBeta⟩
 
 variable  [HasFresh Var]
 
