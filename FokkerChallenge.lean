@@ -18,6 +18,10 @@ import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.FlipApp
 import FokkerChallenge.EnhancedCslib.List
 import FokkerChallenge.EnhancedCslib.Spine
+import FokkerChallenge.EnhancedCslib.HeadRed
+import FokkerChallenge.EnhancedCslib.InternalPar
+import FokkerChallenge.EnhancedCslib.StarSeq
+import FokkerChallenge.EnhancedCslib.HeadNormalization
 import FokkerChallenge.Decider.NoDuplicate
 import FokkerChallenge.Decider.EveryBvarUsed
 import FokkerChallenge.Decider.All0

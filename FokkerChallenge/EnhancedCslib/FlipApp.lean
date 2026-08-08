@@ -33,3 +33,47 @@ lemma flip_app_lc {M} {l : List (Term String)}
   | nil => grind
   | cons head tail ih =>  unfold flip
                           apply ih <;> grind
+
+lemma flip_app_eq {x y} {l l': List (Term String)}:
+  l.foldl (flip app) (fvar x) = l'.foldl (flip app) (fvar y) ->
+  x = y := by
+  induction l using List.reverseRecOn generalizing l' with
+  | nil => cases l' using List.reverseRecOn <;> simp [flip]
+  | append_singleton l a _ => cases l' using List.reverseRecOn with
+    | nil => simp [flip]
+    | append_singleton l a _ => simp [flip]; grind
+
+lemma app_eq {x y} {l l': List (Term String)}:
+  l.foldl app (fvar x) = l'.foldl app (fvar y) ->
+  x = y := by
+  induction l using List.reverseRecOn generalizing l' with
+  | nil => cases l' using List.reverseRecOn <;> simp
+  | append_singleton l a _ => cases l' using List.reverseRecOn with
+    | nil => simp
+    | append_singleton l a _ => simp; grind
+
+lemma beta_step_preserve_fvar_apps {x M} {l: List (Term String)}
+  (step : l.foldl app (fvar x) ⭢βᶠ M)  :
+  ∃ l': List _, M = l'.foldl app (fvar x) := by
+  induction l using List.reverseRecOn generalizing M with
+  | nil =>  cases step with | base h => cases h
+  | append_singleton l a ih =>
+  simp at step
+  cases step with
+  | base h => exfalso
+              generalize heq : (List.foldl app (fvar x) l) = M
+              rw [heq] at h
+              cases h
+              cases l using List.reverseRecOn <;> grind
+  | appL h ih =>
+    rename_i N
+    use (l ++ [N])
+    grind
+  | appR h g => obtain ⟨l', ih⟩ := ih g
+                use (l' ++ [a])
+                grind
+
+lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
+  (steps : l.foldl app (fvar x) ↠βᶠ M)  :
+  ∃ l': List _, M = l'.foldl app (fvar x) := by
+  induction steps with grind [beta_step_preserve_fvar_apps]
