@@ -244,15 +244,15 @@ axiom BetaAt.unique {M N Q: Term String} {i} : BetaAt i M N -> BetaAt i M Q -> N
 axiom BetaAt.step_fv {M N: Term String} {i} : BetaAt i M N -> N.fv ⊆ M.fv
 
 @[reduction_sys "𝒽"]
-inductive HeadReduction : Term String → Term String → Prop
-  | base {M N1 N2: Term String} : HeadReduction ((M.abs.abs.app N1).app N2) (M⟦1 ↝ N1⟧⟦0 ↝ N2⟧)
-  | appL {N M1 M2: Term String} : HeadReduction M1 M2 -> HeadReduction (M1.app N) (M2.app N)
+inductive HeadReduction2 : Term String → Term String → Prop
+  | base {M N1 N2: Term String} : HeadReduction2 ((M.abs.abs.app N1).app N2) (M⟦1 ↝ N1⟧⟦0 ↝ N2⟧)
+  | appL {N M1 M2: Term String} : HeadReduction2 M1 M2 -> HeadReduction2 (M1.app N) (M2.app N)
 
 @[scoped grind]
-theorem HeadReduction.fv {M N : Term String} (h : HeadReduction M N) : N.fv ⊆ M.fv := by
+theorem HeadReduction2.fv {M N : Term String} (h : HeadReduction2 M N) : N.fv ⊆ M.fv := by
   induction h with grind [open_preserve_not_fvar]
 
-theorem HeadReduction.step_2_leftmost {M N : Term String} (h : HeadReduction M N)
+theorem HeadReduction2.step_2_leftmost {M N : Term String} (h : HeadReduction2 M N)
   (m_lc : M.LC) : ∃ Z, M ⭢ℓ Z /\ Z ⭢ℓ N /\ ¬ Z.IsAbs:= by
   induction h with
   | base => cases m_lc with | app m_lc _ => cases m_lc with | app _ n_lc =>
@@ -268,34 +268,34 @@ theorem HeadReduction.step_2_leftmost {M N : Term String} (h : HeadReduction M N
                   refine ⟨Z.app N, BetaAt.appNoAbsL h1 ?_, BetaAt.appNoAbsL h2 h3, by grind⟩
                   induction h with grind
 
-theorem HeadReduction.step_2_beta {M N : Term String} (h : HeadReduction M N) (m_lc : M.LC) : M ↠βᶠ N := by
-  obtain ⟨_, h1, h2, _⟩:= HeadReduction.step_2_leftmost h m_lc
+theorem HeadReduction2.step_2_beta {M N : Term String} (h : HeadReduction2 M N) (m_lc : M.LC) : M ↠βᶠ N := by
+  obtain ⟨_, h1, h2, _⟩:= HeadReduction2.step_2_leftmost h m_lc
   have h3 := BetaAt.to_step h1 m_lc
   have h4 := BetaAt.to_step h2 (FullBeta.step_lc_r h3)
   exact .head h3 (.single h4)
 
-theorem HeadReduction.steps_2_beta {M N : Term String} (h : Relation.ReflTransGen HeadReduction M N) (m_lc : M.LC) : M ↠βᶠ N := by
+theorem HeadReduction2.steps_2_beta {M N : Term String} (h : Relation.ReflTransGen HeadReduction2 M N) (m_lc : M.LC) : M ↠βᶠ N := by
   induction h with
   | refl => grind
   | tail _ h ih =>
-      apply HeadReduction.step_2_beta at h
+      apply HeadReduction2.step_2_beta at h
       cases FullBeta.steps_lc_or_rfl ih with
       | inl h =>  refine .trans (by assumption) ?_
                   grind
       | inr h => grind
 
-theorem HeadReduction.unique {M N Z : Term String}
+theorem HeadReduction2.unique {M N Z : Term String}
   (m_lc : M.LC)
-  (h1 : HeadReduction M N)
-  (h2 : HeadReduction M Z): N = Z := by
-  have := HeadReduction.step_2_leftmost h1 m_lc
-  have := HeadReduction.step_2_leftmost h2 m_lc
+  (h1 : HeadReduction2 M N)
+  (h2 : HeadReduction2 M Z): N = Z := by
+  have := HeadReduction2.step_2_leftmost h1 m_lc
+  have := HeadReduction2.step_2_leftmost h2 m_lc
   grind [BetaAt.unique]
 
-theorem HeadReduction.step_lc_r {M N : Term String}
-  (h : HeadReduction M N)
+theorem HeadReduction2.step_lc_r {M N : Term String}
+  (h : HeadReduction2 M N)
   (m_lc : M.LC) : N.LC := by
-  grind [HeadReduction.steps_2_beta, FullBeta.steps_lc_or_rfl]
+  grind [HeadReduction2.steps_2_beta, FullBeta.steps_lc_or_rfl]
 
 theorem head_multiapp (f a b: Term String) (l) :
   (a :: b :: l).foldl Term.app f.abs.abs ⭢𝒽 l.foldl Term.app (f⟦1 ↝ a⟧⟦0 ↝ b⟧) := by
@@ -351,8 +351,8 @@ theorem head_fvar {l : List (Term String)} {M : Term String} {x : String} :
                                         simp
 
 theorem foldl_multiapp_cases {f M : Term String} {l : List (Term String)}
-  (g : HeadReduction (l.foldl app f) M):
-  (∃ f', HeadReduction f f' /\ M = l.foldl app f') \/
+  (g : HeadReduction2 (l.foldl app f) M):
+  (∃ f', HeadReduction2 f f' /\ M = l.foldl app f') \/
   (∃ a b l' f', l = b :: l'      /\ f = f'.abs.abs.app a /\ M = l'.foldl app (f'⟦1 ↝ a⟧⟦0 ↝ b⟧)) \/
   (∃ a b l' f', l = a :: b :: l' /\ f = f'.abs.abs       /\ M = l'.foldl app (f'⟦1 ↝ a⟧⟦0 ↝ b⟧))
   := by
@@ -395,9 +395,9 @@ theorem two_vars_are_enough_openRec {t N1 N0}
               . simp [openRec]
                 rw [open_lc] <;> grind
 
-theorem step_headReduction_2_vars_are_enough {M N : Term String}
+theorem step_HeadReduction2_2_vars_are_enough {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
-  (hmn : HeadReduction M N):
+  (hmn : HeadReduction2 M N):
   ClosedUnderApp fvar_or_combinator N := by
   induction hmn with
   | appL _ _ => grind
@@ -414,17 +414,17 @@ theorem step_headReduction_2_vars_are_enough {M N : Term String}
               cases heq
               apply two_vars_are_enough_openRec <;> assumption
 
-theorem steps_headReduction_fvar_or_combinator {M N : Term String}
+theorem steps_HeadReduction2_fvar_or_combinator {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
-  (steps : Relation.ReflTransGen HeadReduction M N):
+  (steps : Relation.ReflTransGen HeadReduction2 M N):
   ClosedUnderApp fvar_or_combinator N := by
   induction steps with
   | refl => grind
-  | tail _ _ _ => grind [step_headReduction_2_vars_are_enough]
+  | tail _ _ _ => grind [step_HeadReduction2_2_vars_are_enough]
 
-theorem HeadReduction.step_depth {M N : Term String}
+theorem HeadReduction2.step_depth {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
-  (h : HeadReduction M N) :
+  (h : HeadReduction2 M N) :
   N.depth <= M.depth := by
   induction h with
   | base =>
@@ -450,17 +450,17 @@ theorem HeadReduction.step_depth {M N : Term String}
     simp_all
     grind
 
-theorem HeadReduction.steps_depth {M N : Term String}
+theorem HeadReduction2.steps_depth {M N : Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
-  (h : Relation.ReflTransGen HeadReduction M N) :
+  (h : Relation.ReflTransGen HeadReduction2 M N) :
   N.depth <= M.depth := by
   induction h with
   | refl => grind
-  | tail steps h => grind [HeadReduction.step_depth (steps_headReduction_fvar_or_combinator hm steps) h]
+  | tail steps h => grind [HeadReduction2.step_depth (steps_HeadReduction2_fvar_or_combinator hm steps) h]
 
 @[scoped grind]
 inductive unroll_inner : Term String → Term String → Prop
-  | reflTrans {M N: Term String} : HeadReduction M N -> unroll_inner M N
+  | reflTrans {M N: Term String} : HeadReduction2 M N -> unroll_inner M N
   | throughAbsApp {N1 N2: Term String} : unroll_inner (N1.abs.app N2) N2
 
 theorem unroll_inner_eq {M N Z : Term String}
@@ -470,7 +470,7 @@ theorem unroll_inner_eq {M N Z : Term String}
   N = Z := by
   cases hx <;> cases hy <;> rename_i h
   . rename_i g
-    have := HeadReduction.unique m_lc h g
+    have := HeadReduction2.unique m_lc h g
     grind
   . cases h with | appL h => cases h
   . cases h with | appL h => cases h
@@ -479,7 +479,7 @@ theorem unroll_inner_eq {M N Z : Term String}
 theorem unroll_inner.fv {M N  : Term String}
   (h : unroll_inner M N):
   N.fv ⊆ M.fv := by
-  cases h with grind [HeadReduction.fv]
+  cases h with grind [HeadReduction2.fv]
 
 @[scoped grind]
 def unroll : Term String → Term String → Prop := Relation.ReflTransGen unroll_inner
@@ -496,7 +496,7 @@ theorem unroll.LC {M N : Term String}
   induction hmn with
   | refl => grind
   | tail _ h ih => cases h with
-  | reflTrans h => apply HeadReduction.step_lc_r h ih
+  | reflTrans h => apply HeadReduction2.step_lc_r h ih
   | throughAbsApp => cases ih with grind
 
 theorem unroll_fvar_or_combinator {M N : Term String}
@@ -506,7 +506,7 @@ theorem unroll_fvar_or_combinator {M N : Term String}
   induction hmn with
   | refl => grind
   | tail _ h g => cases h with
-  | reflTrans h => apply steps_headReduction_fvar_or_combinator g (.single h)
+  | reflTrans h => apply steps_HeadReduction2_fvar_or_combinator g (.single h)
   | throughAbsApp => cases g with grind
 
 theorem unroll.depth {M N : Term String}
@@ -518,7 +518,7 @@ theorem unroll.depth {M N : Term String}
   | tail h hbc _ =>
     have hb := unroll_fvar_or_combinator (by grind) h
     cases hbc with
-    | reflTrans hbc => grind [HeadReduction.step_depth hb hbc]
+    | reflTrans hbc => grind [HeadReduction2.step_depth hb hbc]
     | throughAbsApp => simp_all
 
 theorem unroll_2_vars_are_enough_foldl {M N : Term String}
@@ -530,7 +530,7 @@ theorem unroll_2_vars_are_enough_foldl {M N : Term String}
             grind
   | tail g h ih => cases h with
     | reflTrans h =>
-    have h := HeadReduction.step_2_beta h (unroll.LC g (closedunderapp_lc (by grind) hm))
+    have h := HeadReduction2.step_2_beta h (unroll.LC g (closedunderapp_lc (by grind) hm))
     obtain ⟨l, ih, g⟩ := ih
     exact ⟨l, .trans ih (steps_flip_app_l h (by grind)), g⟩
     | throughAbsApp =>
@@ -857,8 +857,8 @@ theorem two_vars_are_enough_openRec_U {n t N1 N0}
                 . grind
                 . apply closedunderapp_lc U.LC h1
 
-theorem headreduction_preserve_closedUnderApp_U {M N n}
-  (hmn: HeadReduction M N)
+theorem HeadReduction2_preserve_closedUnderApp_U {M N n}
+  (hmn: HeadReduction2 M N)
   (hm : ClosedUnderApp (U n) M) :
   ClosedUnderApp (U n) N  := by
   induction hmn with
@@ -933,8 +933,8 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
   | refl => exact ⟨[], by grind⟩
   | head h' h ih => cases h' with
   | reflTrans h' =>
-  obtain ⟨l, ih, _⟩ := ih (headreduction_preserve_closedUnderApp_U h' hm)
-  exact ⟨l, .trans (HeadReduction.step_2_beta h' (closedunderapp_lc U.LC hm)) ih, by grind⟩
+  obtain ⟨l, ih, _⟩ := ih (HeadReduction2_preserve_closedUnderApp_U h' hm)
+  exact ⟨l, .trans (HeadReduction2.step_2_beta h' (closedunderapp_lc U.LC hm)) ih, by grind⟩
   | throughAbsApp => cases hm with
     | app hn hc => cases hn with | base hn =>
         specialize ih hc
@@ -966,10 +966,10 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
                     grind
 
 
-theorem HeadReduction.head_nf_exists {M : Term String} {x : String} {l : List (Term String)}
+theorem HeadReduction2.head_nf_exists {M : Term String} {x : String} {l : List (Term String)}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (h : Relation.ReflTransGen Leftmost M (l.foldl app (fvar x))) :
-  ∃ l' : List _, Relation.ReflTransGen HeadReduction M (l'.foldl app (fvar x)) := by
+  ∃ l' : List _, Relation.ReflTransGen HeadReduction2 M (l'.foldl app (fvar x)) := by
   generalize heq : List.foldl app (fvar x) l = N
   rw [heq] at h
   induction h using Relation.ReflTransGen.head_induction_on₂ generalizing l with
