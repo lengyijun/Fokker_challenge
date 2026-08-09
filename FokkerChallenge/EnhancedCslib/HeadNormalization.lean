@@ -133,7 +133,7 @@ theorem head_normalization {M N : Term Var} (hstar : M ↠βᶠ N)
   | refl => exact ⟨N, Relation.ReflTransGen.refl, hnf⟩
   | head hstep _ ih =>
       obtain ⟨P, hP, hnfP⟩ := ih
-      exact headStepStar_headNF_lift hP hnfP (step_to_para hstep)
+      exact headStepStar_headNF_lift hP hnfP (FullBeta.le_parallel _ _ hstep)
 
 /-- A term has a head normal form iff its head reduction reaches one. -/
 theorem hasHNF_iff_headStepStar_headNF {M : Term Var} :
