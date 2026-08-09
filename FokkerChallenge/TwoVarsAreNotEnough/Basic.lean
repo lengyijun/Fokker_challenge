@@ -834,9 +834,8 @@ theorem U.LC {n}: ∀ N, U n N -> N.LC := by
   . grind
   . grind
   . subst_vars
-    apply flip_app_lc
-    . grind
-    . grind
+    rw [flip_app_lc]
+    grind
 
 theorem two_vars_are_enough_openRec_U {n t N1 N0}
   (g : two_vars_are_enough t)
