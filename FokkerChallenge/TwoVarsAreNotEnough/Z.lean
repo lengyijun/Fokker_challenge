@@ -244,19 +244,19 @@ theorem step_closedUnderApp_unroll_z {M N}
                       . grind
                       . apply Q_lc hm _ h7
         . exfalso
-          subst_vars
+          subst f
           cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
           | inl => grind
-          | inr =>  obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
+          | inr =>  -- obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
                     -- have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
                     -- have h := FullBeta.redex_app_l_cong h (LC.fvar "z")
-                    have h1 := h_contain_x _ (.refl)
+                    -- have h1 := h_contain_x _ (.refl)
                     -- unfold fv at h1
                     -- unfold fv at h1
-                    rw [multiapp_fv] at h1
-                    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
-                    rw [<- List.map_eq_replicate_iff] at h5
-                    have h5 : f'.abs.abs.fv = ∅ := by grind
+                    -- rw [multiapp_fv] at h1
+                    -- have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+                    -- rw [<- List.map_eq_replicate_iff] at h5
+                    have hf : f'.abs.abs.fv = ∅ := by grind
                     sorry
                     -- rw [h5] at h1
                     -- rw [h5, foldl_union_replicate_empty] at h1
