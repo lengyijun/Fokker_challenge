@@ -50,20 +50,6 @@ lemma flip_app_lc {M} {l : List (Term String)}:
                             grind
                           . grind
 
-lemma multi_app_lc {M} {l : List (Term String)}:
-  (l.foldl app M).LC <-> M.LC /\ ∀ x ∈ l, x.LC := by
-  induction l generalizing M with
-  | nil => grind
-  | cons head tail ih =>  simp
-                          specialize @ih (M.app head)
-                          rw [ih]
-                          constructor
-                          . intros h
-                            cases h with | intro h _ =>
-                            cases h
-                            grind
-                          . grind
-
 lemma flip_app_eq {x y} {l l': List (Term String)}:
   l.foldl (flip app) (fvar x) = l'.foldl (flip app) (fvar y) ->
   x = y := by
