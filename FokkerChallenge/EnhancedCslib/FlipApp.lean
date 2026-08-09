@@ -2,6 +2,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.ListFullBeta
 
 namespace Cslib
 
@@ -93,3 +94,16 @@ lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
   (steps : l.foldl app (fvar x) ↠βᶠ M)  :
   ∃ l': List _, M = l'.foldl app (fvar x) := by
   induction steps with grind [beta_step_preserve_fvar_apps]
+
+lemma listfullBeta_exists (P : Term String -> Prop) (Ns : List (Term String))
+  (h_lc : ∀ M ∈ Ns, LC M)
+  (h : ∀ t ∈ Ns, ∃ t', t ↠βᶠ t' /\ P t') :
+  ∃ Ns', Ns ↠lβᶠ Ns' /\ ∀ t ∈ Ns', P t := by
+  induction Ns with
+  | nil =>  use []
+            grind
+  | cons head tail ih =>
+  obtain ⟨Ns', h1, _⟩ := ih (by grind) (by grind)
+  simp at h
+  obtain ⟨⟨t', h, _⟩, _⟩ := h
+  exact ⟨t' :: Ns', .trans (listFullBeta_cons_r h1 (by grind)) (listFullBeta_cons_l h (multiApp_steps_lc h1 (by grind))), by grind⟩
