@@ -107,3 +107,13 @@ lemma listfullBeta_exists (P : Term String -> Prop) (Ns : List (Term String))
   simp at h
   obtain ⟨⟨t', h, _⟩, _⟩ := h
   exact ⟨t' :: Ns', .trans (listFullBeta_cons_r h1 (by grind)) (listFullBeta_cons_l h (multiApp_steps_lc h1 (by grind))), by grind⟩
+
+lemma multiapp_openrec {M N i} {l : List (Term String)}:
+  ∃ l' : List _, (l.foldl app M)⟦i ↝ N⟧ = l'.foldl app (M⟦i ↝ N⟧) := by
+  induction l generalizing M with
+  | nil =>  use []
+            grind
+  | cons head tail ih =>
+  obtain ⟨l, h⟩ := @ih (M.app head)
+  use (head⟦i ↝ N⟧ :: l)
+  grind

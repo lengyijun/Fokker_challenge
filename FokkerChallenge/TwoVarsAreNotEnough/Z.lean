@@ -81,6 +81,7 @@ theorem closed_under_app_Z {M t N1 N0}
     any_goals grind
     all_goals simp_all
 
+/-
 theorem closedUnderApp_unroll_z {M}
   (h_contain_x : contain_x (((M.app (fvar "x")).app (fvar "y")).app (fvar "z")))
   (hm : ClosedUnderApp fvar_or_combinator M):
@@ -161,8 +162,9 @@ theorem closedUnderApp_unroll_z {M}
         apply closedunderapp_multiapp_cons (by grind)
         apply closed_under_app_Z (by assumption) (by grind) (by grind) (by grind)
         exact closedunderapp_lc (Z_lc (by grind)) (h5 a (by grind))
+-/
 
-theorem no_x_exists {M N}
+theorem no_x_exists_z {M N}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (steps : unroll M N)
   (hx : "x" ∉ N.fv) :
@@ -242,25 +244,26 @@ theorem step_closedUnderApp_unroll_z {M N}
                         grind
                       . grind
                       . grind
-                      . apply Q_lc hm _ h7
+                      . apply Q_lc (by grind) _ h7
         . exfalso
           subst f
           cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
           | inl => grind
-          | inr =>  -- obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
-                    -- have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
-                    -- have h := FullBeta.redex_app_l_cong h (LC.fvar "z")
-                    -- have h1 := h_contain_x _ (.refl)
-                    -- unfold fv at h1
-                    -- unfold fv at h1
-                    -- rw [multiapp_fv] at h1
-                    -- have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
-                    -- rw [<- List.map_eq_replicate_iff] at h5
-                    have hf : f'.abs.abs.fv = ∅ := by grind
-                    sorry
-                    -- rw [h5] at h1
-                    -- rw [h5, foldl_union_replicate_empty] at h1
-                    -- simp [fv] at h1
+          | inr =>  have hl := listfullBeta_exists (fun t => "x" ∉ t.fv) l ?_ ?_
+                    . obtain ⟨Ns, hl, _⟩ := hl
+                      specialize h_contain_x (Ns.foldl app f'.abs.abs) (steps_multiApp_r hl (by grind))
+                      have hf : f'.abs.abs.fv = ∅ := by grind
+                      rw [multiapp_fv, hf] at h_contain_x
+                      generalize heq : (∅ : Finset String) = fs
+                      rw [heq] at h_contain_x
+                      have : "x" ∉ fs := by grind
+                      clear heq hl
+                      induction Ns generalizing fs <;> grind
+                    . intros t ht
+                      specialize h5 t ht
+                      apply Z_lc_closed (by grind) _ h5
+                    . intros t ht
+                      apply no_x_exists_z (by grind) h4 (by grind) _ (by grind)
       . unfold abs_two_vars_are_enough at h4
         split at h4 <;> try grind
         subst_vars
@@ -272,3 +275,25 @@ theorem step_closedUnderApp_unroll_z {M N}
           apply closedunderapp_multiapp_cons (by grind)
           apply closed_under_app_Z (by assumption) (by grind) (by grind) (by grind)
           exact closedunderapp_lc (Z_lc (by grind)) (h5 a (by grind))
+
+theorem steps_closedUnderApp_unroll_z {M N}
+  (hm : ClosedUnderApp fvar_or_combinator M)
+  (h : contain_x N /\ ClosedUnderApp (Z (M.app (fvar "x"))) N /\ ClosedUnderApp fvar_or_combinator N):
+  ∀ N', N ↠𝒽 N' ->
+  contain_x N' /\ ClosedUnderApp (Z (M.app (fvar "x"))) N' /\ ClosedUnderApp fvar_or_combinator N' := by
+  intros N hN
+  induction hN with
+  | refl => grind
+  | tail _ _ _ => grind [step_closedUnderApp_unroll_z]
+
+theorem closedUnderApp_unroll_z {M}
+  (h_contain_x : contain_x (((M.app (fvar "x")).app (fvar "y")).app (fvar "z")))
+  (hm : ClosedUnderApp fvar_or_combinator M):
+  ∀ N, ((M.app (fvar "x")).app (fvar "y")).app (fvar "z") ↠𝒽 N ->
+  ClosedUnderApp (Z (M.app (fvar "x"))) N := by
+  have := @steps_closedUnderApp_unroll_z _ (((M.app (fvar "x")).app (fvar "y")).app (fvar "z")) hm ⟨h_contain_x, .app (.app (.base ?_) (by grind)) (by grind), by grind⟩
+  . grind
+  . right
+    right
+    left
+    exact .refl

@@ -53,21 +53,11 @@ variable {Var : Type u}
 /-- The application spine `x N₁ … Nₖ`, i.e. `l.foldl app (fvar x)`. -/
 def spine (x : Var) (l : List (Term Var)) : Term Var := l.foldl app (fvar x)
 
-/-- `absN n t = λ…λ. t` with `n` abstractions. -/
-@[scoped grind]
-def absN : ℕ → Term Var → Term Var
-  | 0, t => t
-  | (n + 1), t => abs (absN n t)
-
 @[simp] theorem spine_nil (x : Var) : spine x ([] : List (Term Var)) = fvar x := rfl
 
 @[simp] theorem spine_concat (x : Var) (l : List (Term Var)) (b : Term Var) :
     spine x (l ++ [b]) = app (spine x l) b :=
   List.foldl_concat _ _ _ _
-
-@[simp] theorem absN_zero (t : Term Var) : absN 0 t = t := rfl
-
-@[simp] theorem absN_succ (n : ℕ) (t : Term Var) : absN (n + 1) t = abs (absN n t) := rfl
 
 /-- A spine is either the head variable (empty argument list) or an application. -/
 theorem spine_cases (x : Var) (l : List (Term Var)) :
@@ -143,53 +133,57 @@ theorem fullEta_abs_inv {T U : Term Var} (h : FullEta (abs T) U) :
   | abs xs hs => exact Or.inr ⟨_, xs, rfl, hs⟩
 
 theorem openRec_absN_spine {T : Term Var} {k n : ℕ} {x y : Var} {l : List (Term Var)}
-    (hxy : x ≠ y) (h : openRec k (fvar y) T = absN n (spine x l)) :
-    ∃ l', T = absN n (spine x l') := by
+    (hxy : x ≠ y) (h : openRec k (fvar y) T = abs^[n] (spine x l)) :
+    ∃ l', T = abs^[n] (spine x l') := by
   induction T generalizing k n l with
   | bvar i =>
       cases n with
       | zero =>
-          rw [absN_zero] at h
+          simp_all
           simp only [openRec] at h
           split_ifs at h
           · exact absurd (spine_eq_fvar h.symm).1 hxy
           · exact absurd h.symm spine_ne_bvar
       | succ m =>
-          simp only [openRec, absN_succ] at h
-          split_ifs at h
+          simp only [openRec] at h
+          split_ifs at h <;> rw [add_comm, Function.iterate_add] at h <;> simp at h
   | fvar z =>
       cases n with
       | zero =>
-          rw [absN_zero] at h
+          simp_all
           simp only [openRec] at h
           obtain ⟨hx, hl⟩ := spine_eq_fvar h.symm
-          exact ⟨[], by rw [absN_zero, spine_nil, hx]⟩
+          grind
       | succ m =>
-          simp only [openRec, absN_succ] at h
+          rw [add_comm, Function.iterate_add] at h
+          simp at h
           cases h
   | abs S ih =>
       cases n with
       | zero =>
-          rw [absN_zero] at h
           simp only [openRec] at h
           exact absurd h.symm spine_ne_abs
       | succ m =>
-          simp only [openRec, absN_succ] at h
+          rw [add_comm, Function.iterate_add] at h
+          simp at h
+          simp only [openRec] at h
           obtain ⟨l', hS⟩ := ih (by injection h)
-          exact ⟨l', by rw [absN_succ, hS]⟩
+          rw [add_comm, Function.iterate_add]
+          simp
+          exact ⟨l', by grind⟩
   | app P Q ihP _ =>
       cases n with
       | zero =>
-          rw [absN_zero] at h
           simp only [openRec] at h
           obtain ⟨l₀, _, hP'⟩ := spine_eq_app h.symm
-          obtain ⟨l₀', hP⟩ := ihP (n := 0) (l := l₀) (by rw [absN_zero]; exact hP')
+          obtain ⟨l₀', hP⟩ := ihP (n := 0) (l := l₀) (by exact hP')
           refine ⟨l₀' ++ [Q], ?_⟩
-          rw [absN_zero, spine_concat]
-          rw [absN_zero] at hP
+          rw [spine_concat]
           rw [hP]
+          simp
       | succ m =>
-          simp only [openRec, absN_succ] at h
+          rw [add_comm, Function.iterate_add] at h
+          simp at h
           cases h
 
 
@@ -223,20 +217,19 @@ theorem abs_escape {T U : Term Var} (h : (abs T) ↠ηᶠ U)
           exact (Relation.ReflTransGen.single (hs y hy.2)).trans (hopen y hy.1)
   exact key h T rfl
 
-/-! ## Opening reflects the shape `absN n (spine x l)` -/
-
 /-! ## The main result -/
 
 /-- A normal term that η-reduces to a spine headed by the free variable `x` is
 itself a spine headed by `x`, under some number of abstractions. -/
 theorem Normal.etaStar_absN_spine {M : Term Var} (h : Normal M) :
     ∀ (x : Var) (l : List (Term Var)), M ↠ηᶠ (spine x l) →
-      ∃ n l', M = absN n (spine x l') := by
+      ∃ n l', M = (Term.abs)^[n] (spine x l') := by
   induction h with
   | fvar z =>
       intro x l hred
       obtain ⟨hx, _⟩ := spine_eq_fvar (fullEtaStar_fvar_inv hred)
-      exact ⟨0, [], by rw [absN_zero, spine_nil, hx]⟩
+      subst_vars
+      exact ⟨0, [], by simp⟩
   | @app A B _ hAnotabs _ ihA _ =>
       intro x l hred
       obtain ⟨A', B', hEq, hAred, _⟩ := fullEtaStar_app_inv hred
@@ -245,10 +238,12 @@ theorem Normal.etaStar_absN_spine {M : Term Var} (h : Normal M) :
       obtain ⟨n, l', hAeq⟩ := ihA x l₀ hAred
       cases n with
       | zero =>
-          rw [absN_zero] at hAeq
-          exact ⟨0, l' ++ [B], by rw [absN_zero, spine_concat, hAeq]⟩
+          simp_all
+          refine ⟨0, l' ++ [B], by simp⟩
       | succ m => exfalso
                   apply hAnotabs
+                  rw [add_comm, Function.iterate_add] at hAeq
+                  simp at hAeq
                   grind
   | @abs xs T _ ih =>
       intro x l hred
@@ -260,7 +255,7 @@ theorem Normal.etaStar_absN_spine {M : Term Var} (h : Normal M) :
         exact FullEta.redex_app_l_cong hWred (LC.fvar y)
       obtain ⟨n, l', hEq⟩ := ih y (by grind) x (l ++ [Term.fvar y]) (h1.trans h2)
       obtain ⟨l'', hT⟩ := openRec_absN_spine (Ne.symm (by grind)) hEq
-      exact ⟨n + 1, l'', by rw [absN_succ, hT]⟩
+      exact ⟨n + 1, l'', by rw [add_comm, Function.iterate_add]; simp; grind⟩
 
 /-- **Corrected form of the requested lemma.**  If `M` is a β-normal form which
 η-reduces to a spine `x N₁ … Nₖ` headed by a free variable, then `M` is a spine
@@ -271,7 +266,7 @@ headed by the same free variable, placed under some number `n` of abstractions:
 false; see `Counterexample.beta_normal_of_eta_to_fvar_apps_false`.) -/
 theorem betaNF_etaStar_absN_spine {M : Term Var} {x : Var} {l : List (Term Var)}
     (hM : Relation.Normal FullBeta M) (steps : M ↠ηᶠ (l.foldl app (fvar x))) :
-    ∃ (n : ℕ) (l' : List (Term Var)), M = absN n (l'.foldl app (fvar x)) := by
+    ∃ (n : ℕ) (l' : List (Term Var)), M = abs^[n] (l'.foldl app (fvar x)) := by
   have steps' : M ↠ηᶠ (spine x l) := steps
   rcases steps'.cases_head with h | ⟨c, hc, _⟩
   · exact ⟨0, l, h⟩
