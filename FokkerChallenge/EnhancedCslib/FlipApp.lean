@@ -126,9 +126,12 @@ theorem iterate_app {M M' Z : Term String} {n} (h: M ↠βᶠ M') (z_lc :Z.LC):
 
 theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
   ∃ l' : List _, (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ l'.foldl app (fvar x) := by
-  induction n generalizing l with simp
-  | zero => grind
+  induction n generalizing l with
+  | zero => simp; grind
   | succ n ih =>
+  nth_rewrite 2 [add_comm]
+  rw [Function.iterate_add abs]
+  simp
   obtain ⟨l', h⟩ := @multiapp_openrec (fvar x) (fvar y) 0 l
   obtain ⟨l'', ih⟩ := @ih l'
   refine ⟨l'', .trans (iterate_app ?_ (by grind)) ih⟩
