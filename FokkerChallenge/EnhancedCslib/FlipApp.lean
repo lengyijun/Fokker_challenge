@@ -80,8 +80,16 @@ lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
   ∃ l': List _, M = l'.foldl app (fvar x) := by
   induction steps with grind [beta_step_preserve_fvar_apps]
 
+lemma step_beta_normal_of_eta_to_fvar_apps {x M N} {l: List (Term String)}
+  (hn : N = l.foldl app (fvar x))
+  (hM : Relation.Normal FullBeta M)
+  (steps : M  ⭢ηᶠ N) :
+  (∃ l': List _, M = l'.foldl app (fvar x)) \/
+  (∃ l': List _, M = ((l'.foldl app (fvar x)).app (bvar 0)).abs) := by
+  sorry
+
 lemma beta_normal_of_eta_to_fvar_apps {x M N} {l: List (Term String)}
-  (hn : l.foldl app (fvar x) = N)
+  (hn : N = l.foldl app (fvar x))
   (hM : Relation.Normal FullBeta M)
   (steps : M ↠ηᶠ N) :
   (∃ l': List _, M = l'.foldl app (fvar x)) \/
@@ -90,13 +98,12 @@ lemma beta_normal_of_eta_to_fvar_apps {x M N} {l: List (Term String)}
   | refl => grind
   | head h' h ih =>
     specialize ih (Etastar_normal (.single h') hM)
-    cases h' with
-    | appL _ _ => sorry
-    | appR _ _ => sorry
-    | base h' => cases h' with | eta h' =>
-        rcases ih with _|⟨l, ih⟩
-        . grind
-        . subst_vars
+    rcases ih with ⟨l, ih⟩|⟨l, ih⟩
+    . have := step_beta_normal_of_eta_to_fvar_apps ih hM h'
+      grind
+    . subst_vars
+      cases h' with
+      | base h' => cases h' with | eta h' =>
           exfalso
           apply hM
           refine ⟨((List.foldl app (fvar x) l).app (bvar 0)).abs, Xi.abs ∅ fun x hx => .base ?_⟩
@@ -104,10 +111,23 @@ lemma beta_normal_of_eta_to_fvar_apps {x M N} {l: List (Term String)}
           unfold open' openRec
           rw [open_lc _ _ _ h']
           grind
-    | abs xs _ => rcases ih with ⟨l, ih⟩|⟨l, ih⟩
-                  .  cases l using List.reverseRecOn with
-                    | nil => simp at ih
-                    | append_singleton l a _ => simp; grind
-                  . cases ih
-                    right
-                    sorry
+      | abs xs ih =>
+      have ⟨y, hy⟩ := fresh_exists <| free_union [fv] String
+      specialize ih y (by grind)
+      right
+      rename_i M
+      generalize heq : M ^ fvar y = N
+      rw [heq] at ih
+      cases ih with
+      | appL _ _ => sorry
+      | appR _ _ => sorry
+      | base ih => cases ih with | eta ih =>
+      have g := congrArg (fun t => close t y) heq
+      rw [<- open_close_var _ _ (by grind)] at g
+      subst M
+      use l
+      simp
+      unfold close closeRec
+      apply congr
+      sorry
+      sorry

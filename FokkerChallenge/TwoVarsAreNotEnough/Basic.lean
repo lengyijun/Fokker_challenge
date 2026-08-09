@@ -12,7 +12,7 @@ import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.List
-import FokkerChallenge.EnhancedCslib.Spine
+-- import FokkerChallenge.EnhancedCslib.Spine
 import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
 import FokkerChallenge.EnhancedCslib.HeadRed
 import Mathlib.Data.Finset.Basic
