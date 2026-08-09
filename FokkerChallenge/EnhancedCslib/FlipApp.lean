@@ -80,13 +80,12 @@ lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
   ∃ l': List _, M = l'.foldl app (fvar x) := by
   induction steps with grind [beta_step_preserve_fvar_apps]
 
-lemma beta_normal_of_eta_to_fvar_apps {x M} {l: List (Term String)}
+lemma beta_normal_of_eta_to_fvar_apps {x M N} {l: List (Term String)}
+  (hn : l.foldl app (fvar x) = N)
   (hM : Relation.Normal FullBeta M)
-  (steps : M ↠ηᶠ l.foldl app (fvar x)) :
+  (steps : M ↠ηᶠ N) :
   (∃ l': List _, M = l'.foldl app (fvar x)) \/
   (∃ l': List _, M = ((l'.foldl app (fvar x)).app (bvar 0)).abs) := by
-  generalize heq : l.foldl app (fvar x) = N
-  rw [heq] at steps
   induction steps using Relation.ReflTransGen.head_induction_on with
   | refl => grind
   | head h' h ih =>
@@ -94,7 +93,6 @@ lemma beta_normal_of_eta_to_fvar_apps {x M} {l: List (Term String)}
     cases h' with
     | appL _ _ => sorry
     | appR _ _ => sorry
-    | abs xs _ => sorry
     | base h' => cases h' with | eta h' =>
         rcases ih with _|⟨l, ih⟩
         . grind
@@ -102,5 +100,14 @@ lemma beta_normal_of_eta_to_fvar_apps {x M} {l: List (Term String)}
           exfalso
           apply hM
           refine ⟨((List.foldl app (fvar x) l).app (bvar 0)).abs, Xi.abs ∅ fun x hx => .base ?_⟩
+          convert Beta.beta h' (LC.fvar x)
           unfold open' openRec
-          sorry
+          rw [open_lc _ _ _ h']
+          grind
+    | abs xs _ => rcases ih with ⟨l, ih⟩|⟨l, ih⟩
+                  .  cases l using List.reverseRecOn with
+                    | nil => simp at ih
+                    | append_singleton l a _ => simp; grind
+                  . cases ih
+                    right
+                    sorry
