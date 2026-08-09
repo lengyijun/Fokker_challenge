@@ -117,3 +117,19 @@ lemma multiapp_openrec {M N i} {l : List (Term String)}:
   obtain ⟨l, h⟩ := @ih (M.app head)
   use (head⟦i ↝ N⟧ :: l)
   grind
+
+theorem iterate_app {M M' Z : Term String} {n} (h: M ↠βᶠ M') (z_lc :Z.LC):
+  (fun a => a.app Z)^[n] M ↠βᶠ (fun a => a.app Z)^[n] M' := by
+  induction n generalizing M M' with simp
+  | zero => grind
+  | succ n ih => exact ih (FullBeta.redex_app_l_cong h z_lc)
+
+theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
+  ∃ l' : List _, (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ l'.foldl app (fvar x) := by
+  induction n generalizing l with simp
+  | zero => grind
+  | succ n ih =>
+  obtain ⟨l', h⟩ := @multiapp_openrec (fvar x) (fvar y) 0 l
+  obtain ⟨l'', ih⟩ := @ih l'
+  refine ⟨l'', .trans (iterate_app ?_ (by grind)) ih⟩
+  sorry
