@@ -669,11 +669,12 @@ def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) 
 @[scoped grind]
 def contain_x (M : Term String) := ∀ Y, M ↠βᶠ Y -> "x" ∈ Y.fv
 
-theorem closedUnderApp_unroll {M N}
+theorem closedUnderApp_unroll {M}
   (h_contain_x : contain_x ((M.app (fvar "x")).app (fvar "y")))
-  (hm : ClosedUnderApp fvar_or_combinator M)
-  (g : (M.app (fvar "x")).app (fvar "y") ↠𝒽 N):
-  ClosedUnderApp (Q (M.app (fvar "x"))) N := by
+  (hm : ClosedUnderApp fvar_or_combinator M):
+  ∀ N, (M.app (fvar "x")).app (fvar "y") ↠𝒽 N ->
+       ClosedUnderApp (Q (M.app (fvar "x"))) N := by
+  intros N g
   induction g with
   | refl => refine .app (.base ?_) (by grind)
             right
@@ -742,11 +743,12 @@ theorem closedUnderApp_unroll {M N}
         apply closed_under_app_Q (by assumption) (by grind) (by grind) (by grind)
         exact closedunderapp_lc (Q_lc hm) (h5 a (by grind))
 
-theorem closedUnderApp_unroll_z {M N}
+theorem closedUnderApp_unroll_z {M}
   (h_contain_x : contain_x (((M.app (fvar "x")).app (fvar "y")).app (fvar "z")))
-  (hm : ClosedUnderApp fvar_or_combinator M)
-  (g : ((M.app (fvar "x")).app (fvar "y")).app (fvar "z") ↠𝒽 N):
+  (hm : ClosedUnderApp fvar_or_combinator M):
+  ∀ N, ((M.app (fvar "x")).app (fvar "y")).app (fvar "z") ↠𝒽 N ->
   ClosedUnderApp (Z (M.app (fvar "x"))) N := by
+  intros N g
   induction g with
   | refl => refine .app (.app (.base ?_) (by grind)) (.base (by grind))
             right
