@@ -124,6 +124,12 @@ theorem iterate_app {M M' Z : Term String} {n} (h: M ↠βᶠ M') (z_lc :Z.LC):
   | zero => grind
   | succ n ih => exact ih (FullBeta.redex_app_l_cong h z_lc)
 
+theorem abs_openrec {i n} {N M : Term String} :
+  (abs^[n] M)⟦i ↝ N⟧ = abs^[n] (M⟦n+i ↝ N⟧) := by
+  induction n generalizing M with
+  | zero => simp
+  | succ n ih => simp; grind
+
 theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
   ∃ l' : List _, (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ l'.foldl app (fvar x) := by
   induction n generalizing l with
@@ -132,7 +138,12 @@ theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
   nth_rewrite 2 [add_comm]
   rw [Function.iterate_add abs]
   simp
-  obtain ⟨l', h⟩ := @multiapp_openrec (fvar x) (fvar y) 0 l
+  obtain ⟨l', h⟩ := @multiapp_openrec (fvar x) (fvar y) n l
   obtain ⟨l'', ih⟩ := @ih l'
-  refine ⟨l'', .trans (iterate_app ?_ (by grind)) ih⟩
-  sorry
+  refine ⟨l'', .trans (iterate_app (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
+  . sorry
+  . unfold open'
+    rw [abs_openrec]
+    simp
+    rw [h]
+    grind
