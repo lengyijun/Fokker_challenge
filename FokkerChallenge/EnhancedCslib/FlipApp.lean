@@ -130,7 +130,8 @@ theorem abs_openrec {i n} {N M : Term String} :
   | zero => simp
   | succ n ih => simp; grind
 
-theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
+theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}
+  (h_lc : (abs^[n] (l.foldl app (fvar x))).LC) :
   ∃ l' : List _, (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ l'.foldl app (fvar x) := by
   induction n generalizing l with
   | zero => simp; grind
@@ -139,11 +140,23 @@ theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}:
   rw [Function.iterate_add abs]
   simp
   obtain ⟨l', h⟩ := @multiapp_openrec (fvar x) (fvar y) n l
-  obtain ⟨l'', ih⟩ := @ih l'
-  refine ⟨l'', .trans (iterate_app (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
-  . sorry
-  . unfold open'
-    rw [abs_openrec]
-    simp
-    rw [h]
+  rw [openRec_fvar] at h
+  specialize @ih l' ?_
+  . rw [<- h]
+    have heq : n = n + 0 := by grind
+    nth_rewrite 2 [heq]
+    rw [<- abs_openrec]
+    rw [<- lcAt_iff_LC] at *
+    rw [lcAt_openRec_fvar_iff_lcAt]
+    rw [add_comm, Function.iterate_add abs] at h_lc
+    simp at h_lc
     grind
+  . obtain ⟨l'', ih⟩ := ih
+    refine ⟨l'', .trans (iterate_app (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
+    . rw [add_comm, Function.iterate_add abs] at h_lc
+      simp at h_lc
+      grind
+    . unfold open'
+      rw [abs_openrec]
+      simp
+      rw [h]
