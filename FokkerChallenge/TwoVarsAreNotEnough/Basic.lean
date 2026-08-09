@@ -1039,79 +1039,77 @@ theorem step_closedUnderApp_unroll_z {M N}
   contain_x N' /\ ClosedUnderApp (Z (M.app (fvar "x"))) N' /\ ClosedUnderApp fvar_or_combinator N' := by
     intros N' step
     obtain ⟨h_contain_x, ih, _⟩ := h
-    obtain ⟨l, f, h3, h4, h5⟩ := closedunderapp_multiapp ih
-    rcases h4 with h4|h4|h4|⟨h4, h6⟩
-    . subst_vars
-      exfalso
-      apply head_fvar step
-    . subst_vars
-      exfalso
-      apply head_fvar step
-    . subst_vars
-      rcases foldl_multiapp_cases step with ⟨f', h2, _⟩|⟨a, b, l', f', _, _, h2⟩|⟨a, b, l', f', _, _, h2⟩
+    refine ⟨?_, ?_, HeadReduction2_preserver_fvar_or_combinator (by assumption) step⟩
+    . intros _ steps
+      apply h_contain_x _ (.trans (HeadReduction2.step_2_beta step ?_) steps)
+      grind [Z_lc hm]
+    . obtain ⟨l, f, h3, h4, h5⟩ := closedunderapp_multiapp ih
+      rcases h4 with h4|h4|h4|⟨h4, h6⟩
       . subst_vars
-        refine ⟨?_, ?_, ?_⟩
-        . intros _ steps
-          apply h_contain_x
-          refine .trans ?_ steps
-          sorry
-        . refine closedunderapp_multiapp_cons (by grind) (.base ?_)
+        exfalso
+        apply head_fvar step
+      . subst_vars
+        exfalso
+        apply head_fvar step
+      . subst_vars
+        rcases foldl_multiapp_cases step with ⟨f', h2, _⟩|⟨a, b, l', f', _, _, h2⟩|⟨a, b, l', f', _, _, h2⟩
+        . subst_vars
+          refine closedunderapp_multiapp_cons (by grind) (.base ?_)
           right
           right
           left
           exact .trans h4 (.single (.reflTrans (by grind)))
-        . grind
-      . subst_vars
-        apply closedunderapp_multiapp_cons (by grind)
-        cases unroll_fvar_or_combinator (by grind) h4 with
-        | base h => grind
-        | app h _ => cases h with | base h => cases h with
-        | inl h => cases h
-        | inr h =>  simp at h5
-                    obtain ⟨h5, _⟩ := h5
-                    unfold abs_two_vars_are_enough at h
-                    split at h <;> try grind
-                    rename_i heq
-                    cases heq
-                    have h7 : (M.app (fvar "x")).Q a := by
-                      right
-                      left
-                      refine .trans h4 (.single (.throughAbsApp))
-                    apply closed_under_app_Z h
-                    . have := unroll.depth (by grind) h4
-                      simp_all
-                      grind
-                    . grind
-                    . grind
-                    . apply Q_lc hm _ h7
-      . exfalso
+        . subst_vars
+          apply closedunderapp_multiapp_cons (by grind)
+          cases unroll_fvar_or_combinator (by grind) h4 with
+          | base h => grind
+          | app h _ => cases h with | base h => cases h with
+          | inl h => cases h
+          | inr h =>  simp at h5
+                      obtain ⟨h5, _⟩ := h5
+                      unfold abs_two_vars_are_enough at h
+                      split at h <;> try grind
+                      rename_i heq
+                      cases heq
+                      have h7 : (M.app (fvar "x")).Q a := by
+                        right
+                        left
+                        refine .trans h4 (.single (.throughAbsApp))
+                      apply closed_under_app_Z h
+                      . have := unroll.depth (by grind) h4
+                        simp_all
+                        grind
+                      . grind
+                      . grind
+                      . apply Q_lc hm _ h7
+        . exfalso
+          subst_vars
+          cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
+          | inl => grind
+          | inr =>  obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
+                    -- have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
+                    -- have h := FullBeta.redex_app_l_cong h (LC.fvar "z")
+                    have h1 := h_contain_x _ (.refl)
+                    -- unfold fv at h1
+                    -- unfold fv at h1
+                    rw [multiapp_fv] at h1
+                    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+                    rw [<- List.map_eq_replicate_iff] at h5
+                    rw [h5] at h1
+                    have h5 : f'.abs.abs.fv = ∅ := by grind
+                    rw [h5, foldl_union_replicate_empty] at h1
+                    simp [fv] at h1
+      . unfold abs_two_vars_are_enough at h4
+        split at h4 <;> try grind
         subst_vars
-        cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with
-        | inl => grind
-        | inr =>  obtain ⟨l, h, _⟩ := unroll_2_vars_are_enough_foldl (by grind) h4
-                  have h := FullBeta.redex_app_l_cong h (LC.fvar "y")
-                  have h := FullBeta.redex_app_l_cong h (LC.fvar "z")
-                  have h1 := h_contain_x _ h
-                  unfold fv at h1
-                  unfold fv at h1
-                  rw [flip_app_fv] at h1
-                  have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
-                  rw [<- List.map_eq_replicate_iff] at h5
-                  rw [h5] at h1
-                  have h5 : f'.abs.abs.fv = ∅ := by grind
-                  rw [h5, foldl_union_replicate_empty] at h1
-                  simp [fv] at h1
-    . unfold abs_two_vars_are_enough at h4
-      split at h4 <;> try grind
-      subst_vars
-      rcases foldl_multiapp_cases step with ⟨f', h2, _⟩|⟨a, b, l', f', _, h2, _⟩|⟨a, b, l', f', _, h3, h2⟩
-      . cases h2
-      . cases h2
-      . cases h3
-        subst_vars
-        apply closedunderapp_multiapp_cons (by grind)
-        apply closed_under_app_Z (by assumption) (by grind) (by grind) (by grind)
-        exact closedunderapp_lc (Z_lc hm) (h5 a (by grind))
+        rcases foldl_multiapp_cases step with ⟨f', h2, _⟩|⟨a, b, l', f', _, h2, _⟩|⟨a, b, l', f', _, h3, h2⟩
+        . cases h2
+        . cases h2
+        . cases h3
+          subst_vars
+          apply closedunderapp_multiapp_cons (by grind)
+          apply closed_under_app_Z (by assumption) (by grind) (by grind) (by grind)
+          exact closedunderapp_lc (Z_lc hm) (h5 a (by grind))
 
 /-
 theorem HeadReduction2.head_nf_exists {M : Term String} {x : String} {l : List (Term String)}
