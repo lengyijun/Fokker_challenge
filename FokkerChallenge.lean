@@ -30,3 +30,8 @@ import FokkerChallenge.Decider.OnlyOneVarUsed
 import FokkerChallenge.EncoderDecoder.Basic
 import FokkerChallenge.GenFinite.LA0L1
 import FokkerChallenge.TwoVarsAreNotEnough.Basic
+import FokkerChallenge.TwoVarsAreNotEnough.Head2
+import FokkerChallenge.TwoVarsAreNotEnough.Unroll
+import FokkerChallenge.TwoVarsAreNotEnough.Q
+import FokkerChallenge.TwoVarsAreNotEnough.U
+import FokkerChallenge.TwoVarsAreNotEnough.Z
