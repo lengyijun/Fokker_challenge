@@ -27,6 +27,15 @@ lemma flip_app_fv {M} {Ns : List (Term String)}:
       specialize @ih (head.app M)
       grind
 
+lemma multiapp_fv {M} {Ns : List (Term String)}:
+  (Ns.foldl app M).fv = (Ns.map fv).foldl Union.union M.fv := by
+    induction Ns generalizing M with
+    | nil => grind
+    | cons head tail ih =>
+      simp
+      specialize @ih (M.app head)
+      grind
+
 lemma flip_app_lc {M} {l : List (Term String)}:
   (l.foldl (flip app) M).LC <-> M.LC /\ ∀ x ∈ l, x.LC := by
   induction l generalizing M with
