@@ -47,7 +47,6 @@ theorem final {n M}
   have eta_steps : beta_nf ↠ηᶠ List.foldl app (fvar "x") [(fvar "y").app (H n)] := beta_eta_star_of_beta_normal h_beta_nf hz2
   have beta_nf_lc : beta_nf.LC := by cases FullBeta.steps_lc_or_rfl beta_steps <;> grind
   obtain ⟨i, E, l, beta_nf_eq, _, _, _, _, _, _⟩ := betaNF_etaStar_shape_len_one_openDown_fv beta_nf_lc h_beta_nf eta_steps
-
   have h1 := iterate_app i beta_steps (LC.fvar "y")
   rw [beta_nf_eq] at h1
   obtain ⟨l, h2⟩ := redex_n_apps_n_abs_of_apps i "x" "y" l (by grind)
