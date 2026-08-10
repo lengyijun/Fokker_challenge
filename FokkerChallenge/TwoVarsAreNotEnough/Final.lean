@@ -17,6 +17,7 @@ import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
 import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.EtaToSpine
 import FokkerChallenge.EnhancedCslib.HeadSN
+import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
 import FokkerChallenge.TwoVarsAreNotEnough.Basic
 import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll

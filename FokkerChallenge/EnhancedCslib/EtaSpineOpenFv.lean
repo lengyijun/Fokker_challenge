@@ -1,4 +1,13 @@
-import RequestProject.EtaSpineShape
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
+import FokkerChallenge.EnhancedCslib.EtaToSpine
+import FokkerChallenge.EnhancedCslib.EtaSpineShape
+
+namespace Cslib
+
+namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 /-!
 # Iterated opening of the appended arguments exposes a free variable
@@ -25,11 +34,8 @@ openRec 0 (fvar y) (openRec 1 (fvar y) (… (openRec (n-1) (fvar y) B) …))
 `y ∈ fv (openDown n (fvar y) B)`.
 -/
 
-open scoped Classical
 
 universe u
-
-namespace LambdaLN
 
 open Term
 
@@ -41,6 +47,7 @@ variable {Var : Type u}
 each time with `u`.  This is the operation performed when the `n` enclosing
 abstractions of `absN n t` are opened one after the other, from the innermost
 index `n-1` down to the outermost index `0`. -/
+@[simp, scoped grind]
 def openDown : ℕ → Term Var → Term Var → Term Var
   | 0, _, t => t
   | (n + 1), u, t => openDown n u (openRec n u t)
@@ -49,6 +56,9 @@ def openDown : ℕ → Term Var → Term Var → Term Var
 
 @[simp] theorem openDown_succ (n : ℕ) (u t : Term Var) :
     openDown (n + 1) u t = openDown n u (openRec n u t) := rfl
+
+
+variable  [DecidableEq Var]
 
 /-! ## Free variables survive opening -/
 
@@ -61,7 +71,7 @@ theorem mem_fv_openDown_of_mem_fv {y : Var} :
   | zero => intro u t h; simpa using h
   | succ m ih =>
       intro u t h
-      exact ih u (openRec m u t) (fv_subset_openRec m u t h)
+      exact ih u (openRec m u t) (by grind[open_preserve_not_fvar])
 
 /-- Opening at the index of a dangling bound variable introduces the opening
 term's free variables: if `HasBvar k t` then `y` is free in `openRec k (fvar y) t`. -/
@@ -83,6 +93,8 @@ theorem mem_fv_openRec_of_hasBvar {k : ℕ} {t : Term Var} (y : Var)
         exact Or.inl (iha h)
       · simp only [openRec, fv, Finset.mem_union]
         exact Or.inr (ihb h)
+
+variable  [HasFresh Var]
 
 /-! ## The main statement -/
 
@@ -116,15 +128,13 @@ theorem mem_fv_openDown_of_forall_hasBvar {n : ℕ} {E : List (Term Var)}
 `M ↠ηᶠ x N`, the appended arguments `E` of `M = absN n (x A E₁ … E_n)` all
 contain the variable `y` free once the `n` enclosing abstractions have been
 opened with `fvar y`. -/
-theorem betaNF_etaStar_shape_len_one_openDown_fv [Infinite Var] {M N : Term Var} {x : Var}
-    (hlc : LC M) (hM : BetaNF M) (steps : FullEtaStar M (app (fvar x) N)) :
+theorem betaNF_etaStar_shape_len_one_openDown_fv {M N : Term Var} {x : Var}
+    (hlc : LC M) (hM : Relation.Normal FullBeta M) (steps : M ↠ηᶠ (app (fvar x) N)) :
     ∃ (n : ℕ) (A : Term Var) (E : List (Term Var)),
-      M = absN n ((A :: E).foldl app (fvar x)) ∧ LC A ∧ FullEtaStar A N ∧
+      M = abs^[n] ((A :: E).foldl app (fvar x)) ∧ LC A ∧ A ↠ηᶠ N ∧
         E.length = n ∧ EtaExpArgs n E ∧ (∀ B ∈ E, ∃ k < n, HasBvar k B ∧ ¬ LC B) ∧
         ∀ (y : Var), ∀ B ∈ E, y ∈ fv (openDown n (fvar y) B) := by
   obtain ⟨n, A, E, hEq, hA, hAN, hlen, hE, hdangling⟩ :=
     betaNF_etaStar_shape_len_one hlc hM steps
   exact ⟨n, A, E, hEq, hA, hAN, hlen, hE, hdangling,
     fun y => mem_fv_openDown_of_forall_hasBvar hdangling y⟩
-
-end LambdaLN

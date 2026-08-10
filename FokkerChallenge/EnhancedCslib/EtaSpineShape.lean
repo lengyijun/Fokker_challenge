@@ -408,7 +408,7 @@ normal and `M ↠ηᶠ x N₁ … Nₖ`, then `M = λ…λ. x A₁ … A_k E₁ 
 are locally closed and η-reduce to the `Nᵢ`, and the appended arguments
 `E₁ … E_n` are η-expansions of the `n` enclosing bound variables (so each of
 them contains a dangling bound variable). -/
-theorem Normal.etaStar_spine_shape {M : Term Var} (h : Normal M) :
+theorem Normal_etaStar_spine_shape {M : Term Var} (h : Normal M) :
     ∀ (x : Var) (l : List (Term Var)), M ↠ηᶠ (spine x l) →
       ∃ (n : ℕ) (l₀ E : List (Term Var)),
         M = Term.abs^[n] (spine x (l₀ ++ E)) ∧ List.Forall₂ (Relation.ReflTransGen FullEta) l₀ l ∧
@@ -455,7 +455,6 @@ theorem Normal.etaStar_spine_shape {M : Term Var} (h : Normal M) :
         rw [spine_concat]
         exact FullEta.redex_app_l_cong hWred (LC.fvar y)
       obtain ⟨m, l₀, E, hEq, hF, hLC, hE⟩ := ih y hyxs x (l ++ [Term.fvar y]) (h1.trans h2)
-      rw [hpow_def] at hEq
       obtain ⟨args, hT, hmap⟩ := openRec_absN_spine_args (Ne.symm hyx) hEq
       obtain ⟨l₀', G, rfl, hFl, hGred⟩ := forall₂_snoc_right _ _ _ _ hF
       rw [List.append_assoc] at hmap
@@ -495,16 +494,19 @@ theorem Normal.etaStar_spine_shape {M : Term Var} (h : Normal M) :
           rw [show openRec m (Term.fvar z) G' = G by simpa using hG]
           exact hGred
         · have hsub := fullEtaStar_subst hGred y (u := Term.fvar z) (LC.fvar z)
-          rw [show Term.subst y (Term.fvar z) (Term.fvar y) = Term.fvar z by simp [Term.subst]] at hsub
+          rw [subst_fvar] at hsub
           rw [← show openRec (0 + m) (Term.fvar y) G' = G from hG] at hsub
-          rw [subst_openRec (LC.fvar z) (0 + m) (Term.fvar y) G'] at hsub
-          rw [show Term.subst y (Term.fvar z) (Term.fvar y) = Term.fvar z by simp [Term.subst],
-            subst_fresh hfvG] at hsub
-          simpa using hsub
+          split at hsub <;> try grind
+          rw [subst_openRec] at hsub
+          . rw [subst_fvar] at hsub
+            split at hsub <;> try grind
+            rw [subst_fresh] at hsub <;> grind
+          . grind
       have hEexp : EtaExpArgs m argsE :=
         etaExpArgs_of_map_openRec argsE (by rw [hmapE]; exact hE)
       refine ⟨m + 1, argsA, G' :: argsE, ?_, hFl, ?_, ⟨hGexp, hEexp⟩⟩
-      · rw [absN_succ, hT]
+      · rw [add_comm, Function.iterate_add]
+        rw [hT]
         rfl
       · intro C hC
         exact hLC C (by simp [hC])
@@ -515,7 +517,7 @@ theorem betaNF_etaStar_spine_shape {M : Term Var} {x : Var} {l : List (Term Var)
     ∃ (n : ℕ) (l₀ E : List (Term Var)),
       M = abs^[n] ((l₀ ++ E).foldl app (fvar x)) ∧ List.Forall₂ (Relation.ReflTransGen FullEta) l₀ l ∧
         (∀ A ∈ l₀, LC A) ∧ EtaExpArgs n E :=
-  (betaNF_normal hlc hM).etaStar_spine_shape x l steps
+  Normal_etaStar_spine_shape (betaNF_normal hlc hM) x l steps
 
 /-- **The accurate shape in the case `l.length = 1`.**  A β-normal `M` with
 `M ↠ηᶠ x N` is `λ…λ. x A E₁ … E_n` where `A` is locally closed with `A ↠ηᶠ N`
