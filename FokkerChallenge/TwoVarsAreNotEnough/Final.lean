@@ -45,6 +45,7 @@ theorem final {n M}
   subst Z
   have eta_steps : beta_nf ↠ηᶠ List.foldl app (fvar "x") [(fvar "y").app (H n)] := beta_eta_star_of_beta_normal h_beta_nf hz2
   obtain ⟨i, l, beta_nf_eq⟩ := betaNF_etaStar_absN_spine beta_nf "x" [(fvar "y").app (H n)] h_beta_nf eta_steps
+  -- TODO: we need to prove "y" in every element in l
   have h1 := iterate_app i beta_steps (LC.fvar "y")
   rw [beta_nf_eq] at h1
   have beta_nf_lc : beta_nf.LC := by cases FullBeta.steps_lc_or_rfl beta_steps <;> grind
