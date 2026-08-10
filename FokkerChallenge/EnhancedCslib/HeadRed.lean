@@ -159,6 +159,48 @@ theorem multiapp_headnf {l : List (Term Var)} {x} (h_lc : ∀ t ∈ l, t.LC) :
   | nil => simp; grind
   | append_singleton l a ih => simp; grind
 
+lemma step_beta_normal_preserve_multiapp {x M} {l: List (Term Var)}
+  (h_normal : Relation.Normal HeadStep M)
+  (step : M ⭢βᶠ l.foldl app (fvar x))  :
+  ∃ l': List _, M = l'.foldl app (fvar x) := by
+   induction l using List.reverseRecOn generalizing M with
+   | nil => simp at step
+            cases step with | base step =>
+            generalize heq : (fvar x) = N
+            rw [heq] at step
+            cases step
+            exfalso
+            apply h_normal ⟨_, .beta (by grind) (by grind)⟩
+   | append_singleton l a ih =>
+    simp at step
+    cases step with
+    | base step =>  generalize heq : ((List.foldl app (fvar x) l).app a) = N
+                    rw [heq] at step
+                    cases step
+                    exfalso
+                    apply h_normal ⟨_, .beta (by grind) (by grind)⟩
+    | appL h1 h2 => rename_i M
+                    use (l++[M])
+                    grind
+    | appR h1 step => rename_i M
+                      specialize ih ?_ step
+                      . rintro ⟨N, h⟩
+                        apply h_normal
+                        refine ⟨N.app a, ?_⟩
+                        by_cases hm : M.IsAbs
+                        . cases hm
+                          generalize heq : ((List.foldl app (fvar x) l)) = N
+                          rw [heq] at step
+                          cases step with
+                          | base step => cases step
+                          | abs xs _ => cases l using List.reverseRecOn <;> grind
+                        . exact .app hm h h1
+                      . obtain ⟨l, ih⟩ := ih
+                        subst M
+                        use l ++ [a]
+                        grind
+
+
 variable [HasFresh Var]
 
 theorem HeadStep.regular {M N : Term Var} (h : HeadStep M N) : LC M ∧ LC N := by
@@ -250,7 +292,7 @@ theorem exists_headStep_of_not_headNF {M : Term Var} (hM : LC M) (h : ¬ HeadNF 
 
 /-- A locally closed term is a head normal form iff it has no head redex. -/
 theorem headNF_iff_no_headStep {M : Term Var} (hM : LC M) :
-    HeadNF M ↔ ¬ ∃ N, HeadStep M N := by
+    HeadNF M ↔ Relation.Normal HeadStep M := by
   constructor
   · rintro h ⟨N, hN⟩; exact h.no_headStep (by grind)
   · intro h
@@ -277,3 +319,70 @@ theorem HeadStep.deterministic {M N N' : Term Var} (h : HeadStep M N)
         rw [hEq]
       unfold open' at hclose
       rw [<- open_close, <- open_close] at hclose <;> grind
+
+/-- A β-step out of a head neutral term `y R₁ … Rₖ` reduces one of the arguments,
+so the reduct is again head neutral. -/
+theorem HeadNeutral.of_fullBeta {M N : Term Var} (hM : HeadNeutral M)
+    (step : M ⭢βᶠ N) : HeadNeutral N := by
+  induction hM generalizing N with
+  | fvar x =>
+      cases step with
+      | base h => cases h
+  | @app A B hA hB ih =>
+      cases step with
+      | base h =>
+          cases h with
+          | beta _ _ => exact absurd (by grind) hA.not_isAbs
+      | appL _ hstep => exact HeadNeutral.app hA (FullBeta.step_lc_r hstep)
+      | appR _ hstep => exact HeadNeutral.app (ih hstep) hB
+
+/-- **A β-step out of a head normal form yields a head normal form.** -/
+theorem step_beta_preserve_headnf {M N : Term Var} (step : M ⭢βᶠ N)
+    (hm : HeadNF M) : HeadNF N := by
+  induction hm generalizing N with
+  | neutral hn => exact HeadNF.neutral (hn.of_fullBeta step)
+  | @abs xs A _ ih =>
+      cases step with
+      | base h => cases h
+      | abs ys hstep =>
+          refine HeadNF.abs (xs ∪ ys) fun x hx => ?_
+          simp only [Finset.mem_union, not_or] at hx
+          exact ih x hx.1 (hstep x hx.2)
+
+/-- Head normal forms are preserved by arbitrarily many β-steps. -/
+theorem HeadNF.of_fullBetaStar {M N : Term Var} (step : M ↠βᶠ N)
+    (hm : HeadNF M) : HeadNF N := by
+  induction step with
+  | refl => exact hm
+  | tail _ hstep ih => exact step_beta_preserve_headnf hstep ih
+
+theorem steps_beta_preserve_normal_headstep {M N : Term Var}
+  (steps : M ↠βᶠ N)
+  (hm : Relation.Normal HeadStep M) :
+        Relation.Normal HeadStep N := by
+    cases FullBeta.steps_lc_or_rfl steps with
+    | inr => grind
+    | inl h =>  rw [<- headNF_iff_no_headStep]
+                apply HeadNF.of_fullBetaStar steps
+                rw [headNF_iff_no_headStep] <;> grind
+                grind
+
+lemma steps_beta_normal_preserve_multiapp {x M} {l: List (Term Var)}
+  (h_normal : Relation.Normal HeadStep M)
+  (steps : M ↠βᶠ l.foldl app (fvar x)) :
+  ∃ l': List _, M = l'.foldl app (fvar x) := by
+  induction steps using Relation.ReflTransGen.head_induction_on with
+  | refl => grind
+  | head h' h ih =>
+  obtain ⟨l, ih⟩ := ih (steps_beta_preserve_normal_headstep (.single h') h_normal)
+  subst_vars
+  apply step_beta_normal_preserve_multiapp h_normal h'
+
+lemma steps_headnf_preserve_multiapp {x M} {l: List (Term Var)}
+  (h_normal : HeadNF M)
+  (steps : M ↠βᶠ l.foldl app (fvar x)) :
+  ∃ l': List _, M = l'.foldl app (fvar x) := by
+    cases FullBeta.steps_lc_or_rfl steps with
+    | inr => grind
+    | inl h =>  apply steps_beta_normal_preserve_multiapp ?_ steps
+                rw [<- headNF_iff_no_headStep] <;> grind
