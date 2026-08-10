@@ -52,11 +52,23 @@ theorem reflTransGen_iff_eqvGen_of_normal {M N : Term String}
   exact Relation.ChurchRosser.normal_eqvGen_reflTransGen
     (Relation.Confluent.toChurchRosser confluent_beta_eta) norm h
 
-theorem exists_beta_normal_fvar_app_of_beta_eta {M Y: Term String} :
-  Relation.Normal FullBetaEta ((fvar "x").app Y) ->
-  M ↠βηᶠ ((fvar "x").app Y) ->
-  ∃ Y', Relation.Normal FullBetaEta ((fvar "x").app Y') /\ M ↠βᶠ ((fvar "x").app Y') := by
-  sorry
+theorem exists_beta_normal_fvar_app_of_beta_eta {Y: Term String} {x} :
+  Relation.Normal FullBetaEta ((fvar x).app Y) ↔ Relation.Normal FullBetaEta Y := by
+  constructor <;> intros h g <;> apply h <;> obtain ⟨M, g⟩ := g
+  . exact ⟨(fvar x).app M, FullBetaEta.step_app_r_cong g (by grind)⟩
+  . cases g <;> rename_i g <;> cases g <;> try grind
+    . rename_i N _ _
+      refine ⟨N, ?_⟩
+      left
+      grind
+    . rename_i g _
+      cases g with | base g => cases g
+    . rename_i N _ _
+      refine ⟨N, ?_⟩
+      right
+      grind
+    . rename_i g _
+      cases g with | base g => cases g
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
