@@ -4,6 +4,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaConfluence
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Congruence
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaEtaConfluence
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 import FokkerChallenge.EnhancedCslib.CountBvar
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.EtaNormalForm
@@ -69,6 +70,14 @@ theorem exists_beta_normal_fvar_app_of_beta_eta {Y: Term String} {x} :
       grind
     . rename_i g _
       cases g with | base g => cases g
+
+theorem beta_eta_star_of_beta_normal {M N : Term String} (h : Relation.Normal FullBeta M) (steps : M ↠βηᶠ N) :
+    M ↠ηᶠ N := by
+  induction steps using Relation.ReflTransGen.head_induction_on with
+  | refl => grind
+  | head h' h ih => cases h' with
+    | inl h' => grind
+    | inr h' => exact .head h' (ih (Etastar_normal (.single h') h))
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
