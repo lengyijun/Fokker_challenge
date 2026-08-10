@@ -3,6 +3,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.ListFullBeta
+import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
 
 namespace Cslib
 
@@ -109,14 +110,11 @@ lemma listfullBeta_exists (P : Term String -> Prop) (Ns : List (Term String))
   exact ⟨t' :: Ns', .trans (listFullBeta_cons_r h1 (by grind)) (listFullBeta_cons_l h (multiApp_steps_lc h1 (by grind))), by grind⟩
 
 lemma multiapp_openrec {M N i} {l : List (Term String)}:
-  ∃ l' : List _, (l.foldl app M)⟦i ↝ N⟧ = l'.foldl app (M⟦i ↝ N⟧) := by
+   (l.foldl app M)⟦i ↝ N⟧ = (l.map (openRec i N)).foldl app (M⟦i ↝ N⟧) := by
   induction l generalizing M with
-  | nil =>  use []
-            grind
-  | cons head tail ih =>
-  obtain ⟨l, h⟩ := @ih (M.app head)
-  use (head⟦i ↝ N⟧ :: l)
-  grind
+  | nil => grind
+  | cons head tail ih =>  obtain h := @ih (M.app head)
+                          grind
 
 theorem iterate_app {M M' Z : Term String} (n) (h: M ↠βᶠ M') (z_lc :Z.LC):
   (fun a => a.app Z)^[n] M ↠βᶠ (fun a => a.app Z)^[n] M' := by
