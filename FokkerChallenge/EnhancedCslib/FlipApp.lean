@@ -91,7 +91,7 @@ lemma beta_step_preserve_fvar_apps {x M} {l: List (Term String)}
                 grind
 
 lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
-  (steps : l.foldl app (fvar x) ↠βᶠ M)  :
+  (steps : l.foldl app (fvar x) ↠βᶠ M) :
   ∃ l': List _, M = l'.foldl app (fvar x) := by
   induction steps with grind [beta_step_preserve_fvar_apps]
 

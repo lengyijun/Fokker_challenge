@@ -65,9 +65,6 @@ inductive HeadNF : Term Var → Prop
   | abs (xs : Finset Var) {M : Term Var} :
       (∀ x ∉ xs, HeadNF (M ^ fvar x)) → HeadNF (abs M)
 
-/-- `M` *has a head normal form* if some β-reduct of `M` is a head normal form. -/
-def HasHNF (M : Term Var) : Prop := ∃ N, M ↠βᶠ N ∧ HeadNF N
-
 /-! ### Basic properties -/
 
 theorem HeadNeutral.lc {M : Term Var} (h : HeadNeutral M) : LC M := by
@@ -143,15 +140,12 @@ theorem HeadStepStar.toFullBetaStar {M N : Term Var} (h : HeadStepStar M N) :
   | refl => exact Relation.ReflTransGen.refl
   | tail _ hstep ih => exact ih.tail hstep.toFullBeta
 
-theorem HeadNeutral.no_headStep {M N : Term Var} (hM : HeadNeutral M) :
-    ¬ HeadStep M N := by
-  induction hM generalizing N with
-  | fvar x => intro h; cases h
-  | @app A B hA hB ih =>
-      intro h
-      cases h with
-      | beta => exact HeadNeutral.not_isAbs hA (by grind)
-      | app _ hstep _ => exact ih hstep
+theorem HeadNeutral.no_headStep {M : Term Var} (hM : HeadNeutral M) : Relation.Normal HeadStep M := by
+  induction hM with (intros g; obtain ⟨N, g⟩ := g)
+  | fvar x => cases g
+  | app h _ ih => cases g with
+    | beta _ _ => cases h
+    | app _ _ _ => grind
 
 /-- A β-normal form has no head redex, since every head step is a β-step. -/
 theorem BetaNF.no_headStep {M : Term Var} (h : Relation.Normal FullBeta M) :
@@ -159,7 +153,13 @@ theorem BetaNF.no_headStep {M : Term Var} (h : Relation.Normal FullBeta M) :
   rintro ⟨N, hN⟩
   apply h ⟨N, hN.toFullBeta⟩
 
-variable  [HasFresh Var]
+theorem multiapp_headnf {l : List (Term Var)} {x} (h_lc : ∀ t ∈ l, t.LC) :
+  (List.foldl app (fvar x) l).HeadNeutral := by
+  induction l using List.reverseRecOn with
+  | nil => simp; grind
+  | append_singleton l a ih => simp; grind
+
+variable [HasFresh Var]
 
 theorem HeadStep.regular {M N : Term Var} (h : HeadStep M N) : LC M ∧ LC N := by
   induction h with
@@ -169,10 +169,9 @@ theorem HeadStep.regular {M N : Term Var} (h : HeadStep M N) : LC M ∧ LC N := 
                   rw [lcAt_openRec_iff_lcAt _ _ _ hN]
                   grind
   | app _ _ hN ih => exact ⟨LC.app ih.1 hN, LC.app ih.2 hN⟩
-  | abs xs _ ih => exact ⟨LC.abs xs _ fun x hx => (ih x hx).1,
-      LC.abs xs _ fun x hx => (ih x hx).2⟩
+  | abs xs _ ih => exact ⟨LC.abs xs _ fun x hx => (ih x hx).1, LC.abs xs _ fun x hx => (ih x hx).2⟩
 
-variable  [DecidableEq Var]
+variable [DecidableEq Var]
 
 /-- Head reduction is substitutive. -/
 theorem HeadStep.subst {M N : Term Var} (h : HeadStep M N) (x : Var) {u : Term Var}
@@ -214,16 +213,13 @@ theorem HeadStep.abs_fresh {M M' : Term Var} (x : Var) (hM : x ∉ M.fv) (hM' : 
 
 /-! ### Head normal forms are exactly the terms without a head redex -/
 
-theorem HeadNF.no_headStep {M N : Term Var} (hM : HeadNF M) : ¬ HeadStep M N := by
-  induction hM generalizing N with
-  | neutral hn => exact HeadNeutral.no_headStep hn
-  | @abs xs A hA ih =>
-      intro h
-      cases h with
-      | @abs ys A₀ A' hstep =>
-          obtain ⟨y, hy⟩ := Infinite.exists_notMem_finset (xs ∪ ys)
-          simp only [Finset.mem_union, not_or] at hy
-          exact ih y hy.1 (hstep y hy.2)
+theorem HeadNF.no_headStep {M : Term Var} (hM : HeadNF M) : Relation.Normal HeadStep M := by
+  induction hM with
+  | neutral h => apply HeadNeutral.no_headStep h
+  | abs xs _ ih =>  rintro ⟨M, g⟩
+                    cases g
+                    have ⟨x, _⟩ := fresh_exists <| free_union [fv] Var
+                    apply ih x (by grind) (by grind)
 
 theorem exists_headStep_of_not_headNF {M : Term Var} (hM : LC M) (h : ¬ HeadNF M) :
     ∃ N, HeadStep M N := by
@@ -256,7 +252,7 @@ theorem exists_headStep_of_not_headNF {M : Term Var} (hM : LC M) (h : ¬ HeadNF 
 theorem headNF_iff_no_headStep {M : Term Var} (hM : LC M) :
     HeadNF M ↔ ¬ ∃ N, HeadStep M N := by
   constructor
-  · rintro h ⟨N, hN⟩; exact h.no_headStep hN
+  · rintro h ⟨N, hN⟩; exact h.no_headStep (by grind)
   · intro h
     by_contra hc
     exact h (exists_headStep_of_not_headNF hM hc)

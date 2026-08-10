@@ -21,7 +21,7 @@ import FokkerChallenge.EnhancedCslib.List
 import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.InternalPar
 import FokkerChallenge.EnhancedCslib.StarSeq
-import FokkerChallenge.EnhancedCslib.HeadNormalization
+import FokkerChallenge.EnhancedCslib.HeadSN
 import FokkerChallenge.EnhancedCslib.EtaToSpine
 import FokkerChallenge.Decider.NoDuplicate
 import FokkerChallenge.Decider.EveryBvarUsed

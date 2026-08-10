@@ -39,19 +39,15 @@ Main results:
 
 universe u
 
-
 open Term
 
 variable {Var : Type u}
 
-/-! ### Lifting a head step through an internal parallel reduction -/
-
-/-- Head reduction from `M` **terminates**: there is no infinite head reduction
-sequence starting at `M`. -/
-def HeadTerminating (M : Term Var) : Prop := Acc (fun a b : Term Var => HeadStep b a) M
+/-- `M` *has a head normal form* if some β-reduct of `M` is a head normal form. -/
+def HasHNF (M : Term Var) : Prop := ∃ N, M ↠βᶠ N ∧ HeadNF N
 
 /-- A terminating head reduction admits no infinite head reduction sequence. -/
-theorem HeadTerminating.no_seq {M : Term Var} (h : HeadTerminating M) :
+theorem HeadSn.no_seq {M : Term Var} (h : Relation.SN HeadStep M) :
     ∀ (f : ℕ → Term Var), f 0 = M → (∀ n, HeadStep (f n) (f (n + 1))) → False := by
   induction h with
   | intro A _ ih =>
@@ -146,18 +142,18 @@ theorem hasHNF_iff_headStepStar_headNF {M : Term Var} :
 
 /-! ### Determinism and termination of head reduction -/
 
-theorem headTerminating_of_headNF {M : Term Var} (h : HeadNF M) : HeadTerminating M :=
-  Acc.intro _ fun _ hy => absurd hy h.no_headStep
+theorem headTerminating_of_headNF {M : Term Var} (h : HeadNF M) : Relation.SN HeadStep M :=
+  Acc.intro _ fun _ hy => absurd hy (by grind [HeadNF.no_headStep h])
 
 theorem headTerminating_of_headStepStar_headNF {M P : Term Var}
-    (hstar : HeadStepStar M P) (hnf : HeadNF P) : HeadTerminating M := by
+    (hstar : HeadStepStar M P) (hnf : HeadNF P) : Relation.SN HeadStep M := by
   induction hstar using Relation.ReflTransGen.head_induction_on with
   | refl => exact headTerminating_of_headNF hnf
   | head hstep _ ih =>
       refine Acc.intro _ fun y hy => ?_
       rwa [HeadStep.deterministic hy hstep]
 
-theorem exists_headNF_of_headTerminating {M : Term Var} (h : HeadTerminating M) :
+theorem exists_headNF_of_headTerminating {M : Term Var} (h : Relation.SN HeadStep M) :
     LC M → ∃ P, HeadStepStar M P ∧ HeadNF P := by
   induction h with
   | intro A _ ih =>
@@ -171,7 +167,7 @@ theorem exists_headNF_of_headTerminating {M : Term Var} (h : HeadTerminating M) 
 /-- **The Head Normalization Theorem.**  A locally closed term has a head normal
 form if and only if its head reduction terminates. -/
 theorem head_normalization_theorem {M : Term Var} (hM : LC M) :
-    HasHNF M ↔ HeadTerminating M := by
+    HasHNF M ↔ Relation.SN HeadStep M := by
   constructor
   · intro h
     obtain ⟨P, hP, hnfP⟩ := hasHNF_iff_headStepStar_headNF.mp h
@@ -185,4 +181,4 @@ theorem no_infinite_head_reduction {M : Term Var} (h : HasHNF M)
     (f : ℕ → Term Var) (hf0 : f 0 = M) (hf : ∀ n, HeadStep (f n) (f (n + 1))) :
     False := by
   obtain ⟨P, hP, hnfP⟩ := hasHNF_iff_headStepStar_headNF.mp h
-  exact (headTerminating_of_headStepStar_headNF hP hnfP).no_seq f hf0 hf
+  exact  HeadSn.no_seq (headTerminating_of_headStepStar_headNF hP hnfP) f hf0 hf
