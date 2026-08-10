@@ -4,6 +4,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.ListFullBeta
 import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
+import FokkerChallenge.EnhancedCslib.AbsN
 
 namespace Cslib
 
@@ -38,12 +39,12 @@ lemma multiapp_fv {M} {Ns : List (Term String)}:
       specialize @ih (M.app head)
       grind
 
-lemma flip_app_lcat {M i} {l : List (Term String)}:
-  LcAt i (l.foldl (flip app) M) <-> LcAt i M /\ ∀ x ∈ l, LcAt i x := by
+lemma app_lcat {M i} {l : List (Term String)}:
+  LcAt i (l.foldl app M) <-> LcAt i M /\ ∀ x ∈ l, LcAt i x := by
   induction l generalizing M with
   | nil => grind
-  | cons head tail ih =>  simp [flip]
-                          specialize @ih (head.app M)
+  | cons head tail ih =>  simp
+                          specialize @ih (M.app head)
                           rw [ih]
                           constructor
                           . intros h
@@ -138,12 +139,6 @@ theorem iterate_app {M M' Z : Term String} (n) (h: M ↠βᶠ M') (z_lc :Z.LC):
   | zero => grind
   | succ n ih => exact ih (FullBeta.redex_app_l_cong h z_lc)
 
-theorem abs_openrec {i n} {N M : Term String} :
-  (abs^[n] M)⟦i ↝ N⟧ = abs^[n] (M⟦n+i ↝ N⟧) := by
-  induction n generalizing M with
-  | zero => simp
-  | succ n ih => simp; grind
-
 theorem recursive_app_lc {M y : Term String} {i} (hm : M.LC) (hy : y.LC) : ((fun a => a.app y)^[i] M).LC := by
   induction i generalizing M with (simp; grind)
 
@@ -161,20 +156,10 @@ theorem redex_n_apps_n_abs_of_apps (n x y) (l : List (Term String))
     simp at h_lc
     grind
   . unfold open'
-    rw [abs_openrec, multiapp_openrec, openRec_fvar]
+    rw [absn_openrec, multiapp_openrec, openRec_fvar]
     simp
     refine .trans (ih _ ?_) ?_
-    . sorry
+    . rw [<- lcAt_iff_LC, absn_lcat, app_lcat] at *
+      grind
     . rw [List.map_map]
       exact .refl
-
-/-
-  . refine ⟨l'', .trans (iterate_app _ (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
-    . rw [add_comm, Function.iterate_add abs] at h_lc
-      simp at h_lc
-      grind
-    . unfold open'
-      rw [abs_openrec]
-      simp
-      rw [h]
--/

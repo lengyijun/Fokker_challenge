@@ -3,6 +3,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 import FokkerChallenge.EnhancedCslib.EtaToSpine
+import FokkerChallenge.EnhancedCslib.AbsN
 
 namespace Cslib
 
@@ -193,13 +194,6 @@ theorem EtaExpArgs.not_lc {n : ℕ} {l : List (Term Var)} (h : EtaExpArgs n l) :
   exact Term.LC.not_hasBvar hlc k hk
 
 /-! ## Auxiliary lemmas about opening, `absN` and spines -/
-
-theorem fv_absN (n : ℕ) (t : Term Var) : fv (abs^[n] t) = fv t := by
-  induction n with
-  | zero => rfl
-  | succ m ih =>  rw [add_comm, Function.iterate_add]
-                  simp
-                  grind
 
 theorem fv_head_subset_foldl : ∀ (l : List (Term Var)) (h : Term Var),
     fv h ⊆ fv (l.foldl app h) := by
