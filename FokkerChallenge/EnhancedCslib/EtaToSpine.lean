@@ -264,7 +264,7 @@ headed by the same free variable, placed under some number `n` of abstractions:
 
 (The requested statement claimed `n ≤ 1` with a last argument `bvar 0`, which is
 false; see `Counterexample.beta_normal_of_eta_to_fvar_apps_false`.) -/
-theorem betaNF_etaStar_absN_spine {M : Term Var} {x : Var} {l : List (Term Var)}
+theorem betaNF_etaStar_absN_spine (M : Term Var) (x : Var) (l : List (Term Var))
     (hM : Relation.Normal FullBeta M) (steps : M ↠ηᶠ (l.foldl app (fvar x))) :
     ∃ (n : ℕ) (l' : List (Term Var)), M = abs^[n] (l'.foldl app (fvar x)) := by
   have steps' : M ↠ηᶠ (spine x l) := steps
