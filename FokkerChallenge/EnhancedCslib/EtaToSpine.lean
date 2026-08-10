@@ -94,16 +94,11 @@ theorem spine_eq_app {x : Var} {l : List (Term Var)} {P Q : Term Var}
 
 /-! ## Inversion lemmas for η-reduction -/
 
-theorem fullEta_fvar_inv {y : Var} {U : Term Var} (h : FullEta (fvar y) U) : False := by
-  cases h with
-  | base hb => cases hb
-
-
 theorem fullEtaStar_fvar_inv {y : Var} {U : Term Var} (h : (fvar y) ↠ηᶠ  U) :
     U = fvar y := by
   rcases h.cases_head with h | ⟨c, hc, _⟩
   · exact h.symm
-  · exact absurd hc fullEta_fvar_inv
+  · cases hc with | base hc => cases hc
 
 theorem fullEta_app_inv {A B U : Term Var} (h : FullEta (app A B) U) :
     ∃ A' B', U = app A' B' ∧ A ↠ηᶠ A' ∧ B ↠ηᶠ  B' := by
