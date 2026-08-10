@@ -262,6 +262,11 @@ theorem two_vars_are_enough_openRec {t N1 N0}
               . simp [openRec]
                 rw [open_lc] <;> grind
 
+theorem recursive_app_fvar_fvar_or_combinator {i y M}
+  (hm : ClosedUnderApp fvar_or_combinator M):
+  ClosedUnderApp fvar_or_combinator ((fun a => a.app (fvar y))^[i] (M)) := by
+  induction i generalizing M with (simp; grind)
+
 
 @[scoped grind]
 def T (a: Term String) : Prop :=  a = (fvar "y") \/
