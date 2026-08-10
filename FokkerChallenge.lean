@@ -35,3 +35,4 @@ import FokkerChallenge.TwoVarsAreNotEnough.Unroll
 import FokkerChallenge.TwoVarsAreNotEnough.Q
 import FokkerChallenge.TwoVarsAreNotEnough.U
 import FokkerChallenge.TwoVarsAreNotEnough.Z
+import FokkerChallenge.TwoVarsAreNotEnough.Final

@@ -160,3 +160,6 @@ theorem redex_n_apps_n_abs_of_apps (n x y) (l : List (Term String))
       rw [abs_openrec]
       simp
       rw [h]
+
+theorem recursive_app_lc {M y : Term String} {i} (hm : M.LC) (hy : y.LC) : ((fun a => a.app y)^[i] M).LC := by
+  induction i generalizing M with (simp; grind)

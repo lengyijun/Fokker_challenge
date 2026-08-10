@@ -16,6 +16,7 @@ import FokkerChallenge.EnhancedCslib.List
 import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
 import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.EtaToSpine
+import FokkerChallenge.EnhancedCslib.HeadSN
 import FokkerChallenge.TwoVarsAreNotEnough.Basic
 import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
@@ -27,7 +28,7 @@ namespace Cslib
 
 namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
-theorem closedUnderApp_unroll_z {n M}
+theorem final {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
   (steps : ((M.app (fvar "x")).app (fvar "y")) ↠βηᶠ (fvar "x").app ((fvar "y").app (H n))) : False := by
@@ -38,10 +39,29 @@ theorem closedUnderApp_unroll_z {n M}
   have h : Relation.Normalizable FullBetaEta ((M.app (fvar "x")).app (fvar "y")) := ⟨_, steps, h_betaeta_nf⟩
   have h_beta_nf := h
   rw [<- hasBetaEtaNF_iff_hasBetaNF] at h_beta_nf
-  obtain ⟨beta_nf, h, h_beta_nf⟩ := h_beta_nf
-  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta h)
+  obtain ⟨beta_nf, beta_steps, h_beta_nf⟩ := h_beta_nf
+  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta beta_steps)
   have := Relation.Normal.reflTransGen_eq h_betaeta_nf hz1
   subst Z
   have eta_steps : beta_nf ↠ηᶠ List.foldl app (fvar "x") [(fvar "y").app (H n)] := beta_eta_star_of_beta_normal h_beta_nf hz2
   obtain ⟨i, l, beta_nf_eq⟩ := betaNF_etaStar_absN_spine beta_nf "x" [(fvar "y").app (H n)] h_beta_nf eta_steps
+  have h1 := iterate_app i beta_steps (LC.fvar "y")
+  rw [beta_nf_eq] at h1
+  have beta_nf_lc : beta_nf.LC := by cases FullBeta.steps_lc_or_rfl beta_steps <;> grind
+  obtain ⟨l, h2⟩ := redex_n_apps_n_abs_of_apps i "x" "y" l (by grind)
+  have recursive_app_lc : (List.foldl app (fvar "x") l).LC := by
+    cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
+    | inl h => grind
+    | inr h =>  rw [<- h]
+                apply recursive_app_lc (LC.app (LC.app (by grind) (by grind)) (by grind)) (by grind)
+  rw [multiApp_lc] at recursive_app_lc
+  have hnf : HasHNF _ := ⟨_, h1.trans h2, .neutral (multiapp_headnf (by grind))⟩
+  rw [hasHNF_iff_headStepStar_headNF] at hnf
+  obtain ⟨P, hsteps, hnf⟩ := hnf
+  obtain ⟨Z, hz1, hz2⟩ := confluent_fullBeta (h1.trans h2) (HeadStepStar.toFullBetaStar hsteps)
+  obtain ⟨l', hl'⟩ := beta_steps_preserve_fvar_apps hz1
+  subst Z
+  obtain ⟨l'', _⟩:= steps_headnf_preserve_multiapp hnf hz2
+  subst P
+  have := HeadReduction2.head_nf_exists (recursive_app_fvar_fvar_or_combinator ?_) (HeadNF.of_not_isAbs hnf ?_) hsteps
   all_goals sorry
