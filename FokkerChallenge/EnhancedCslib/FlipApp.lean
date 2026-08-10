@@ -130,7 +130,7 @@ theorem abs_openrec {i n} {N M : Term String} :
   | zero => simp
   | succ n ih => simp; grind
 
-theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}
+theorem redex_n_apps_n_abs_of_apps (n x y) (l : List (Term String))
   (h_lc : (abs^[n] (l.foldl app (fvar x))).LC) :
   ∃ l' : List _, (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ l'.foldl app (fvar x) := by
   induction n generalizing l with
