@@ -54,13 +54,13 @@ theorem final {n M}
     rw [<- lcAt_iff_LC, absn_lcat, app_lcat] at *
     grind
   obtain h2 := redex_n_apps_n_abs_of_apps i "x" "y" (E::l) (by grind)
-
-  -- have recursive_app_lc : (List.foldl app (fvar "x") l).LC := by
-  --   cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
-  --   | inl h => grind
-  --   | inr h =>  rw [<- h]
-  --               apply recursive_app_lc (LC.app (LC.app (by grind) (by grind)) (by grind)) (by grind)
-  -- rw [multiApp_lc] at recursive_app_lc
+  have : M.LC := closedunderapp_lc (by grind) hm
+  have recursive_app_lc : (List.foldl app (fvar "x") (List.map (openDown i (fvar "y")) (E :: l))).LC := by
+    cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
+    | inl h => grind
+    | inr h =>  rw [<- h]
+                apply recursive_app_lc (LC.app (LC.app (by grind) (by grind)) (by grind)) (by grind)
+  rw [multiApp_lc] at recursive_app_lc
   have hnf : HasHNF _ := ⟨_, h1.trans h2, .neutral (multiapp_headnf (by grind))⟩
   rw [hasHNF_iff_headStepStar_headNF] at hnf
   obtain ⟨P, hsteps, hnf⟩ := hnf
