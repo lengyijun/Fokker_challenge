@@ -118,7 +118,7 @@ lemma multiapp_openrec {M N i} {l : List (Term String)}:
   use (head⟦i ↝ N⟧ :: l)
   grind
 
-theorem iterate_app {M M' Z : Term String} {n} (h: M ↠βᶠ M') (z_lc :Z.LC):
+theorem iterate_app {M M' Z : Term String} (n) (h: M ↠βᶠ M') (z_lc :Z.LC):
   (fun a => a.app Z)^[n] M ↠βᶠ (fun a => a.app Z)^[n] M' := by
   induction n generalizing M M' with simp
   | zero => grind
@@ -152,7 +152,7 @@ theorem redex_n_apps_n_abs_of_apps {n x y} {l : List (Term String)}
     simp at h_lc
     grind
   . obtain ⟨l'', ih⟩ := ih
-    refine ⟨l'', .trans (iterate_app (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
+    refine ⟨l'', .trans (iterate_app _ (.head (.base (.beta ?_ (by grind))) ?_) (by grind)) ih⟩
     . rw [add_comm, Function.iterate_add abs] at h_lc
       simp at h_lc
       grind
