@@ -73,27 +73,6 @@ theorem mem_fv_openDown_of_mem_fv {y : Var} :
       intro u t h
       exact ih u (openRec m u t) (by grind[open_preserve_not_fvar])
 
-/-- Opening at the index of a dangling bound variable introduces the opening
-term's free variables: if `HasBvar k t` then `y` is free in `openRec k (fvar y) t`. -/
-theorem mem_fv_openRec_of_hasBvar {k : ℕ} {t : Term Var} (y : Var)
-    (h : HasBvar k t) : y ∈ fv (openRec k (fvar y) t) := by
-  induction t generalizing k with
-  | bvar i =>
-      simp only [HasBvar] at h
-      subst h
-      simp [openRec, fv]
-  | fvar z => simp [HasBvar] at h
-  | abs t ih =>
-      simp only [HasBvar] at h
-      simpa [openRec, fv] using ih (k := k + 1) h
-  | app a b iha ihb =>
-      simp only [HasBvar] at h
-      rcases h with h | h
-      · simp only [openRec, fv, Finset.mem_union]
-        exact Or.inl (iha h)
-      · simp only [openRec, fv, Finset.mem_union]
-        exact Or.inr (ihb h)
-
 variable  [HasFresh Var]
 
 /-! ## The main statement -/

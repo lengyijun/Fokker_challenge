@@ -129,6 +129,27 @@ theorem Term.LC.not_hasBvar {t : Term Var} (h : LC t) (k : ℕ) : ¬ HasBvar k t
         grind)
   | app h1 h2 ih1 ih2 => simp only [HasBvar]; exact not_or.2 ⟨ih1 k, ih2 k⟩
 
+/-- Opening at the index of a dangling bound variable introduces the opening
+term's free variables: if `HasBvar k t` then `y` is free in `openRec k (fvar y) t`. -/
+theorem mem_fv_openRec_of_hasBvar {k : ℕ} {t : Term Var} (y : Var)
+    (h : HasBvar k t) : y ∈ fv (openRec k (fvar y) t) := by
+  induction t generalizing k with
+  | bvar i =>
+      simp only [HasBvar] at h
+      subst h
+      simp [openRec, fv]
+  | fvar z => simp [HasBvar] at h
+  | abs t ih =>
+      simp only [HasBvar] at h
+      simpa [openRec, fv] using ih (k := k + 1) h
+  | app a b iha ihb =>
+      simp only [HasBvar] at h
+      rcases h with h | h
+      · simp only [openRec, fv, Finset.mem_union]
+        exact Or.inl (iha h)
+      · simp only [openRec, fv, Finset.mem_union]
+        exact Or.inr (ihb h)
+
 /-! ## η-expansions of a bound variable -/
 
 /-- `EtaExpBvar k E` : opening `E` at index `k` with a fresh variable `y` yields
