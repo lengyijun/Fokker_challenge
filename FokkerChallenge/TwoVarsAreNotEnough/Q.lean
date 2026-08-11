@@ -207,26 +207,26 @@ theorem step_closedUnderApp_unroll_q {M N}
         . subst_vars
           apply closedunderapp_multiapp_cons (by grind)
           cases unroll_fvar_or_combinator (by grind) h4 with
-          | base h => grind
+          | base h => cases h <;> grind
           | app h _ => cases h with | base h => cases h with
-          | inl h => cases h
-          | inr h =>  simp at h5
-                      obtain ⟨h5, _⟩ := h5
-                      unfold abs_two_vars_are_enough at h
-                      split at h <;> try grind
-                      rename_i heq
-                      cases heq
-                      have h7 : (M.app (fvar "x")).Q a := by
-                        right
-                        left
-                        refine .trans h4 (.single (.throughAbsApp))
-                      apply closed_under_app_Q h
-                      . have := unroll.depth (by grind) h4
-                        simp_all
-                        grind
-                      . grind
-                      . grind
-                      . apply Q_lc (by grind) _ h7
+            | inl h => cases h
+            | inr h =>  simp at h5
+                        obtain ⟨h5, _⟩ := h5
+                        unfold abs_two_vars_are_enough at h
+                        split at h <;> try grind
+                        rename_i heq
+                        cases heq
+                        have h7 : (M.app (fvar "x")).Q a := by
+                          right
+                          left
+                          refine .trans h4 (.single (.throughAbsApp))
+                        apply closed_under_app_Q h
+                        . have := unroll.depth (by grind) h4
+                          simp_all
+                          grind
+                        . grind
+                        . grind
+                        . apply Q_lc (by grind) _ h7
         . exfalso
           subst f
           cases unroll_fvar_or_combinator (by grind) h4 with | base h3 => cases h3 with

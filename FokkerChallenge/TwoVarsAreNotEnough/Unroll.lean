@@ -49,7 +49,7 @@ theorem unroll_inner.fv {M N  : Term String}
   N.fv ⊆ M.fv := by
   cases h with grind [HeadReduction2.fv]
 
-@[scoped grind]
+@[simp, grind unfold]
 def unroll : Term String → Term String → Prop := Relation.ReflTransGen unroll_inner
 
 theorem unroll.fv {M N  : Term String}

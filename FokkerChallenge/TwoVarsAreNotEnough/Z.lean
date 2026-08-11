@@ -225,7 +225,7 @@ theorem step_closedUnderApp_unroll_z {M N}
         . subst_vars
           apply closedunderapp_multiapp_cons (by grind)
           cases unroll_fvar_or_combinator (by grind) h4 with
-          | base h => grind
+          | base h => cases h <;> grind
           | app h _ => cases h with | base h => cases h with
           | inl h => cases h
           | inr h =>  simp at h5
