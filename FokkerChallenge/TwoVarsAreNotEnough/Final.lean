@@ -72,7 +72,7 @@ theorem final {n M}
   obtain ⟨l'', _, hl''⟩:= steps_headnf_preserve_multiapp hnf hz2
   subst P
   have hm2 : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
-  have h2steps := HeadReduction2.head_nf_exists (closedunderapp_multiapp_cons (by grind) (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
+  have h2steps := HeadReduction2.headneutral_exists (closedunderapp_multiapp_cons (by grind) (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
   have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H n))) (List.replicate i (fvar "y"))) =
   (List.foldl app (fvar "x") ( ((fvar "y").app (H n)) :: List.replicate i (fvar "y"))) := by grind
   have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
@@ -87,4 +87,9 @@ theorem final {n M}
   apply FullBetaEta.steps_fv at hz2
   apply FullBeta.steps_fv at hl''
   simp at hz2
-  all_goals sorry
+  have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [closedunderapp_fv (by grind) hm]) hq
+  cases hq with | base hq =>
+  rcases hq with _|hq|_ <;> try grind
+  obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
+  -- h2steps
+  sorry

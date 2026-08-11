@@ -258,7 +258,7 @@ theorem HeadReduction2.is_headstep {M M' M'': Term String}
       cases heq
       exact .base
 
-theorem HeadReduction2.head_nf_exists {M N: Term String}
+theorem HeadReduction2.headneutral_exists {M N: Term String}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (hn : N.HeadNeutral)
   (h : Relation.ReflTransGen HeadStep M N) :
