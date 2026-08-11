@@ -43,7 +43,7 @@ theorem final {n M}
   have h_beta_nf := h
   rw [<- hasBetaEtaNF_iff_hasBetaNF] at h_beta_nf
   obtain ⟨beta_nf, beta_steps, h_beta_nf⟩ := h_beta_nf
-  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta beta_steps)
+  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta _ _ beta_steps)
   have := Relation.Normal.reflTransGen_eq h_betaeta_nf hz1
   subst Z
   have eta_steps : beta_nf ↠ηᶠ List.foldl app (fvar "x") [(fvar "y").app (H n)] := beta_eta_star_of_beta_normal h_beta_nf hz2
