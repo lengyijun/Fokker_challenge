@@ -280,6 +280,7 @@ theorem closedUnderApp_unroll {M}
     left
     exact .refl
 
+/-
 theorem closedUnderApp_app_y_iterate {i} {M N : Term String} :
   ClosedUnderApp M.Q N ->
   ClosedUnderApp M.Q ((fun a => a.app (fvar "y"))^[i] N) := by
@@ -288,3 +289,4 @@ theorem closedUnderApp_app_y_iterate {i} {M N : Term String} :
   | succ n _ => rw [add_comm, Function.iterate_add]
                 simp
                 grind
+-/

@@ -153,7 +153,7 @@ theorem BetaNF.no_headStep {M : Term Var} (h : Relation.Normal FullBeta M) :
   rintro ⟨N, hN⟩
   apply h ⟨N, hN.toFullBeta⟩
 
-theorem multiapp_headnf {l : List (Term Var)} {x} (h_lc : ∀ t ∈ l, t.LC) :
+theorem multiapp_headneutral {l : List (Term Var)} {x} (h_lc : ∀ t ∈ l, t.LC) :
   (List.foldl app (fvar x) l).HeadNeutral := by
   induction l using List.reverseRecOn with
   | nil => simp; grind

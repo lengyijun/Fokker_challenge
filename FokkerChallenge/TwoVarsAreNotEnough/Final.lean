@@ -48,31 +48,43 @@ theorem final {n M}
   subst Z
   have eta_steps : beta_nf ↠ηᶠ List.foldl app (fvar "x") [(fvar "y").app (H n)] := beta_eta_star_of_beta_normal h_beta_nf hz2
   have beta_nf_lc : beta_nf.LC := by cases FullBeta.steps_lc_or_rfl beta_steps <;> grind
-  obtain ⟨i, E, l, beta_nf_eq, _, _, _, _, _, _⟩ := betaNF_etaStar_shape_len_one_openDown_fv beta_nf_lc h_beta_nf eta_steps
+  obtain ⟨i, E, l, beta_nf_eq, _, he, _, _, _, _⟩ := betaNF_etaStar_shape_len_one_openDown_fv beta_nf_lc h_beta_nf eta_steps
   have h1 := steps_multiApp_l (Ns := List.replicate i (fvar "y")) beta_steps (by grind)
   rw [beta_nf_eq] at h1
   obtain h2 := redex_n_apps_n_abs_of_apps "y" (List.foldl app (fvar "x") (E :: l)) i (by grind)
+  rw [openDown_multiapp, openDown_fvar] at h2
   -- have : (abs^[i] (List.foldl app (fvar "x") l)).LC := by
   --   rw [beta_nf_eq] at beta_nf_lc
   --   rw [<- lcAt_iff_LC, absn_lcat, app_lcat] at *
   --   grind
-  -- have : M.LC := closedunderapp_lc (by grind) hm
-  -- have recursive_app_lc : (List.foldl app (fvar "x") (List.map (openDown i (fvar "y")) (E :: l))).LC := by
-  --   cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
-  --   | inl h => grind
-  --   | inr h =>  rw [<- h]
-  --               apply recursive_app_lc (LC.app (LC.app (by grind) (by grind)) (by grind)) (by grind)
-  -- rw [multiApp_lc] at recursive_app_lc
-  have hnf : HasHNF _ := ⟨_, h1.trans h2, .neutral (multiapp_headnf (by grind))⟩
+  have : M.LC := closedunderapp_lc (by grind) hm
+  have recursive_app_lc : (List.foldl app (fvar "x") (List.map (openDown i (fvar "y")) (E :: l))).LC := by
+    cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
+    | inl h => grind
+    | inr h =>  rw [<- h, multiApp_lc]
+                grind
+  have hnf : HasHNF _ := ⟨_, h1.trans h2, .neutral ((multiapp_headneutral (by grind)))⟩
   rw [hasHNF_iff_headStepStar_headNF] at hnf
   obtain ⟨P, hsteps, hnf⟩ := hnf
   obtain ⟨Z, hz1, hz2⟩ := confluent_fullBeta (h1.trans h2) (HeadStepStar.toFullBetaStar hsteps)
   obtain ⟨l', _, hl'⟩ := beta_steps_preserve_fvar_apps hz1
   subst Z
-  obtain ⟨l'', _, _⟩:= steps_headnf_preserve_multiapp hnf hz2
+  obtain ⟨l'', _, hl''⟩:= steps_headnf_preserve_multiapp hnf hz2
   subst P
   have hm2 : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
-  have h2steps := HeadReduction2.head_nf_exists (recursive_app_fvar_fvar_or_combinator (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
-  -- have := steps_multiApp_l_union steps
-  -- obtain ⟨_, _, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨beta_eta_spline_contain_x (by sorry), closedUnderApp_app_y_iterate (.app (.base (by grind)) (by grind)), recursive_app_fvar_fvar_or_combinator (by grind)⟩ _ h2steps
-  sorry
+  have h2steps := HeadReduction2.head_nf_exists (closedunderapp_multiapp_cons (by grind) (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
+  have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H n))) (List.replicate i (fvar "y"))) =
+  (List.foldl app (fvar "x") ( ((fvar "y").app (H n)) :: List.replicate i (fvar "y"))) := by grind
+  have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+  rw [heq] at g
+  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (by grind)⟩ _ h2steps
+  cases hl' with | cons hl' _ =>
+  cases hl'' with | cons hl'' _ =>
+  rw [openDown_lc (by assumption)] at hl'
+  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta (FullBetaEta.from_eta _ _ he) (FullBetaEta.from_beta _ _ hl')
+  have := Relation.Normal.reflTransGen_eq (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) hz1
+  subst_vars
+  apply FullBetaEta.steps_fv at hz2
+  apply FullBeta.steps_fv at hl''
+  simp at hz2
+  all_goals sorry

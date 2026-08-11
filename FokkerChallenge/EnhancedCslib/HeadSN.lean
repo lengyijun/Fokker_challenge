@@ -3,7 +3,6 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.InternalPar
 import FokkerChallenge.EnhancedCslib.StarSeq
-import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
 
 namespace Cslib

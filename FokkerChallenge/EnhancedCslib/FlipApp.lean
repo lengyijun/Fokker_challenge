@@ -137,10 +137,10 @@ theorem iterate_app {M M' Z : Term String} (n) (h: M ↠βᶠ M') (z_lc :Z.LC):
   induction n generalizing M M' with simp
   | zero => grind
   | succ n ih => exact ih (FullBeta.redex_app_l_cong h z_lc)
--/
 
 theorem recursive_app_lc {M y : Term String} {i} (hm : M.LC) (hy : y.LC) : ((fun a => a.app y)^[i] M).LC := by
   induction i generalizing M with (simp; grind)
+-/
 
 theorem redex_n_apps_n_abs_of_apps (y : String) (M n)
   (h_lc : (abs^[n] M).LC) :
