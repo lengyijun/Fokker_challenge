@@ -280,6 +280,44 @@ theorem closedUnderApp_unroll {M}
     left
     exact .refl
 
+theorem closedUnderApp_q_of_foldl_app (y) {M N a l}
+  (h1 : y ∈ a.fv)
+  (h2 : y ∉ M.fv)
+  (h : ClosedUnderApp (Q M) (List.foldl app N (a :: l))) :
+  ClosedUnderApp (Q M) N := by
+  induction l using List.reverseRecOn with
+  | nil =>  simp_all
+            cases h with
+            | app _ _ => grind
+            | base h => rcases h with _|h|_
+                        . grind
+                        . apply unroll.fv at h
+                          simp at h
+                          exfalso
+                          apply h2
+                          apply h
+                          simp
+                          right
+                          grind
+                        . grind
+  | append_singleton l a _ =>
+      rw [<- List.cons_append, List.foldl_concat] at h
+      cases h with
+      | app _ _ => grind
+      | base h => rcases h with _|h|_
+                  . grind
+                  . apply unroll.fv at h
+                    simp at h
+                    exfalso
+                    apply h2
+                    apply h
+                    simp
+                    left
+                    rw [multiapp_fv]
+                    apply union_foldl
+                    grind
+                  . grind
+
 /-
 theorem closedUnderApp_app_y_iterate {i} {M N : Term String} :
   ClosedUnderApp M.Q N ->

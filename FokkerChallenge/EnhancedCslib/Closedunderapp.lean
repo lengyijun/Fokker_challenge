@@ -44,6 +44,13 @@ theorem closedunderapp_lc {Q} {M : Term String}
   M.LC := by
   induction h2 with grind
 
+@[scoped grind]
+theorem closedunderapp_fv {Q} {M : Term String}
+  (h : ∀ x, Q x -> x.fv = ∅ )
+  (h2 : ClosedUnderApp Q M) :
+  M.fv = ∅  := by
+  induction h2 with grind
+
 
 theorem closedunderapp_derive {P Q} {M : Term String}
   (h : ∀ x, P x -> Q x)
