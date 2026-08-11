@@ -23,6 +23,7 @@ import FokkerChallenge.TwoVarsAreNotEnough.Basic
 import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
 import FokkerChallenge.TwoVarsAreNotEnough.Q
+import FokkerChallenge.TwoVarsAreNotEnough.U
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -78,6 +79,13 @@ theorem exists_head_reduction_to_fvar_app {M N x}
   exact ⟨_, _, _, h2steps, .trans (FullBetaEta.from_beta _ _ hl'') hz2⟩
 
 
+
+theorem no_reduction_to_Hn_with_depth_bound_U {n M}
+  (hm : ClosedUnderApp (U n "y" "x") M)
+  (steps : M ↠βηᶠ (fvar "x").app ((fvar "y").app (H n))) : False := by
+  induction n using Nat.strong_induction_on generalizing M with | h n ih =>
+  obtain ⟨l, i, Z, h, _⟩ := exists_head_reduction_to_fvar_app (closedunderapp_derive2 U_le_fvar_or_combinator hm) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  sorry
 
 theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)

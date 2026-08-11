@@ -27,12 +27,12 @@ namespace Cslib
 namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 @[scoped grind]
-def U (n : Nat) (a: Term String) : Prop :=
-  a = fvar "x" \/
+def U (n : Nat) (x z : String) (a: Term String) : Prop :=
+  a = fvar x \/
   (a.abs_two_vars_are_enough /\ a.depth < n) \/
-  ∃ l : List _, a = l.foldl (flip app) (fvar "z") /\ ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth <= n
+  ∃ l : List _, a = l.foldl (flip app) (fvar z) /\ ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth <= n
 
-theorem U.LC {n}: ∀ N, U n N -> N.LC := by
+theorem U.LC {n x z }: ∀ N, U n x z N -> N.LC := by
   intros N h
   rcases h with _|_|⟨l, _, _⟩
   . grind
@@ -41,12 +41,12 @@ theorem U.LC {n}: ∀ N, U n N -> N.LC := by
     rw [flip_app_lc]
     grind
 
-theorem two_vars_are_enough_openRec_U {n t N1 N0}
+theorem two_vars_are_enough_openRec_U {n t N1 N0 x z}
   (g : two_vars_are_enough t)
   (ht : t.depth < n)
-  (h1: ClosedUnderApp (U n) N1)
-  (h2: ClosedUnderApp (U n) N0) :
-  ClosedUnderApp (U n) (t⟦1 ↝ N1⟧⟦0 ↝ N0⟧) := by
+  (h1: ClosedUnderApp (U n x z) N1)
+  (h2: ClosedUnderApp (U n x z) N0) :
+  ClosedUnderApp (U n x z) (t⟦1 ↝ N1⟧⟦0 ↝ N0⟧) := by
   induction t with
   | fvar _ => grind
   | app _ _ iha ihb =>  simp at ht
@@ -68,10 +68,10 @@ theorem two_vars_are_enough_openRec_U {n t N1 N0}
                 . grind
                 . apply closedunderapp_lc U.LC h1
 
-theorem HeadReduction2_preserve_closedUnderApp_U {M N n}
+theorem HeadReduction2_preserve_closedUnderApp_U {M N n x z}
   (hmn: HeadReduction2 M N)
-  (hm : ClosedUnderApp (U n) M) :
-  ClosedUnderApp (U n) N  := by
+  (hm : ClosedUnderApp (U n x z) M) :
+  ClosedUnderApp (U n x z) N  := by
   induction hmn with
   | appL h _ => cases hm with
     | app => grind
@@ -134,9 +134,10 @@ theorem HeadReduction2_preserve_closedUnderApp_U {M N n}
                           grind
                         . grind
 
-theorem closedUnderApp_reduce_to_H_false {M N n}
-  (hm : ClosedUnderApp (U n) M)
-  (hx : "x" ∈ N.fv)
+theorem closedUnderApp_reduce_to_H_false {M N n x z}
+  (hxz : x ≠ z)
+  (hm : ClosedUnderApp (U n x z) M)
+  (hx : x ∈ N.fv)
   (hmn : unroll M N) :
   ∃ l: List _, M ↠βᶠ l.foldl (flip app) N /\
                ∀ x ∈ l, x.abs_two_vars_are_enough /\ x.depth < n := by
@@ -173,7 +174,7 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
                     rw [flip_app_fv, h5, foldl_union_replicate_empty] at g
                     apply unroll.fv at h
                     specialize h hx
-                    have : "x" ∈ ({"z"} : Finset String) := by grind
+                    have : x ∈ ({z} : Finset String) := by grind
                     grind
 
 theorem U_le_fvar_or_combinator{i y z} : ∀ x, U i y z x -> ClosedUnderApp fvar_or_combinator x := by

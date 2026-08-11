@@ -273,14 +273,6 @@ theorem recursive_app_fvar_fvar_or_combinator {i y M}
 
 
 @[scoped grind]
-def T (a: Term String) : Prop :=  a = (fvar "y") \/
-                                  a = (fvar "x") \/
-                                  a.abs_two_vars_are_enough
-
-@[scoped grind]
-def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠βᶠ ((fvar "x").app Y)
-
-@[scoped grind]
 def contain_x (M : Term String) := ∀ Y, M ↠βηᶠ Y -> "x" ∈ Y.fv
 
 theorem beta_eta_nf_contain_x {M N : Term String} (h : Relation.Normal FullBetaEta N)
