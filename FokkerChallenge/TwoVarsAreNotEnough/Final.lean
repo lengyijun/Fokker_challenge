@@ -73,5 +73,5 @@ theorem final {n M}
   subst P
   have hm2 : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
   have h2steps := HeadReduction2.head_nf_exists (recursive_app_fvar_fvar_or_combinator (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
-  -- obtain ⟨_, _, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨by grind, closedUnderApp_app_y_iterate (.app (.base (by grind)) (by grind)), recursive_app_fvar_fvar_or_combinator (by grind)⟩ _ h2steps
+  obtain ⟨_, _, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨steps_multiApp_l_union (by grind) (by grind), closedUnderApp_app_y_iterate (.app (.base (by grind)) (by grind)), recursive_app_fvar_fvar_or_combinator (by grind)⟩ _ h2steps
   sorry
