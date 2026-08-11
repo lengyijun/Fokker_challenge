@@ -2,6 +2,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.ListFullBeta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaConfluence
+import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBetaEtaConfluence
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import Cslib.Foundations.Data.HasFresh
 import FokkerChallenge.Basic
@@ -277,7 +278,17 @@ def T (a: Term String) : Prop :=  a = (fvar "y") \/
 def head_secure (M : Term String) := ∃ Y, ((M.app (fvar "x")).app (fvar "y")) ↠βᶠ ((fvar "x").app Y)
 
 @[scoped grind]
-def contain_x (M : Term String) := ∀ Y, M ↠βᶠ Y -> "x" ∈ Y.fv
+def contain_x (M : Term String) := ∀ Y, M ↠βηᶠ Y -> "x" ∈ Y.fv
+
+theorem beta_eta_nf_contain_x {M N : Term String} (h : Relation.Normal FullBetaEta N)
+  (steps : M ↠βηᶠ N) (hn : contain_x N) : contain_x M  := by
+    intros t ht
+    obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta ht steps
+    have := Relation.Normal.reflTransGen_eq h hz2
+    subst_vars
+    specialize hn _ .refl
+    apply FullBetaEta.steps_fv at hz1
+    grind
 
 
 /-
