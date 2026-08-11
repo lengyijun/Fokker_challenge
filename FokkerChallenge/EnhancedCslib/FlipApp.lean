@@ -131,33 +131,32 @@ lemma multiapp_openrec {M N i} {l : List (Term String)}:
   | cons head tail ih =>  obtain h := @ih (M.app head)
                           grind
 
+/-
 theorem iterate_app {M M' Z : Term String} (n) (h: M ↠βᶠ M') (z_lc :Z.LC):
   (fun a => a.app Z)^[n] M ↠βᶠ (fun a => a.app Z)^[n] M' := by
   induction n generalizing M M' with simp
   | zero => grind
   | succ n ih => exact ih (FullBeta.redex_app_l_cong h z_lc)
+-/
 
 theorem recursive_app_lc {M y : Term String} {i} (hm : M.LC) (hy : y.LC) : ((fun a => a.app y)^[i] M).LC := by
   induction i generalizing M with (simp; grind)
 
-theorem redex_n_apps_n_abs_of_apps (n x y) (l : List (Term String))
-  (h_lc : (abs^[n] (l.foldl app (fvar x))).LC) :
-  (fun a => a.app (fvar y))^[n] (abs^[n] (l.foldl app (fvar x))) ↠βᶠ (l.map (openDown n (fvar y))).foldl app (fvar x) := by
-  induction n generalizing l with
+theorem redex_n_apps_n_abs_of_apps (y : String) (M n)
+  (h_lc : (abs^[n] M).LC) :
+  (List.replicate n (fvar y)).foldl app (abs^[n] M) ↠βᶠ (openDown n (fvar y) M) := by
+  induction n generalizing M with
   | zero => simp; grind
   | succ n ih =>
-  nth_rewrite 2 [add_comm]
-  rw [Function.iterate_add abs]
+  nth_rewrite 1 [add_comm]
+  rw [List.replicate_succ, Function.iterate_add abs]
   simp
-  refine .trans (iterate_app _ (.single (.base (.beta ?_ (by grind)))) (by grind)) ?_
+  refine .head (step_multiApp_l ((.base (.beta ?_ (by grind)))) (by grind)) ?_
   . rw [add_comm, Function.iterate_add abs] at h_lc
     simp at h_lc
     grind
   . unfold open'
-    rw [absn_openrec, multiapp_openrec, openRec_fvar]
-    simp
-    refine .trans (ih _ ?_) ?_
-    . rw [<- lcAt_iff_LC, absn_lcat, app_lcat] at *
-      grind
-    . rw [List.map_map]
-      exact .refl
+    rw [absn_openrec]
+    refine .trans (ih _ ?_) .refl
+    rw [<- lcAt_iff_LC, absn_lcat] at *
+    grind
