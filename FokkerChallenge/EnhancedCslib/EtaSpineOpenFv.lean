@@ -57,6 +57,22 @@ def openDown : ℕ → Term Var → Term Var → Term Var
 @[simp] theorem openDown_succ (n : ℕ) (u t : Term Var) :
     openDown (n + 1) u t = openDown n u (openRec n u t) := rfl
 
+theorem openDown_fvar {i y} {x : Var} : openDown i y (fvar x) = fvar x := by
+  induction i <;> grind
+
+theorem openDown_app {i y} {M N : Term Var} : openDown i y (M.app N) = (openDown i y M).app (openDown i y N) := by
+  induction i generalizing M N with
+  | zero => grind
+  | succ n ih =>  unfold openDown
+                  rw [openRec_app, ih]
+
+theorem openDown_multiapp {i y M} {l : List (Term Var)} :
+  openDown i y (l.foldl app M) =
+  (l.map (openDown i y)).foldl app (openDown i y M) := by
+  induction l generalizing M with
+  | nil => grind
+  | cons head tail ih =>  simp
+                          rw [@ih (M.app head), openDown_app]
 
 variable  [DecidableEq Var]
 
