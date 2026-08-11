@@ -57,6 +57,9 @@ def openDown : ℕ → Term Var → Term Var → Term Var
 @[simp] theorem openDown_succ (n : ℕ) (u t : Term Var) :
     openDown (n + 1) u t = openDown n u (openRec n u t) := rfl
 
+theorem openDown_lc [HasFresh Var] {i y} {M : Term Var} (h_lc : M.LC) :
+  openDown i y M = M := by induction i with grind
+
 theorem openDown_fvar {i y} {x : Var} : openDown i y (fvar x) = fvar x := by
   induction i <;> grind
 
