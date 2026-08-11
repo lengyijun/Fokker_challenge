@@ -84,9 +84,23 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
   (hm : ClosedUnderApp (U n "y" "x") M)
   (steps : M ↠βηᶠ (fvar "x").app ((fvar "y").app (H n))) : False := by
   induction n using Nat.strong_induction_on generalizing M with | h n ih =>
-  obtain ⟨l, i, Z, h, _⟩ := exists_head_reduction_to_fvar_app (closedunderapp_derive2 U_le_fvar_or_combinator hm) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
-  sorry
+  obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (closedunderapp_derive2 U_le_fvar_or_combinator hm) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  have hn := HeadReduction2_steps_preserve_closedUnderApp_U h (U_replicate hm)
+  apply U_foldl_z at hn
+  obtain ⟨l, i, Z, h, steps⟩ := exists_head_reduction_to_fvar_app (closedunderapp_derive2 U_le_fvar_or_combinator hn) normal_H steps
+  have hz := HeadReduction2_steps_preserve_closedUnderApp_U h (U_replicate hn)
+  apply U_foldl_x at hz
+  have steps := FullBetaEta.steps_subst_cong_l _ _ _ "y" (FullBetaEta.steps_subst_cong_l _ _ _ "x" steps (LC.fvar "z")) (LC.fvar "z")
+  rw [subst_fresh "x" (H n) _ (by grind), subst_fresh "y" (H n) _ (by grind)] at steps
+  have steps := FullBetaEta.steps_app_l_cong (FullBetaEta.steps_app_l_cong steps (LC.fvar "x")) (LC.fvar "y")
+  have hz := U_subst_x_closedunderapp "z" (by grind) (U_subst_z_closedunderapp "z" (by grind) hz)
+  cases n with
+  | zero => have steps := steps.trans (FullBetaEta.from_beta _ _ H_0_reduce)
+            obtain ⟨l, i, Z, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
+            sorry
+  | succ n => sorry
 
+/-
 theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
@@ -149,3 +163,4 @@ theorem no_reduction_to_Hn_with_depth_bound {n M}
   obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
   -- h2steps
   sorry
+-/
