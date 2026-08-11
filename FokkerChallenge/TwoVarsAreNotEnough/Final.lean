@@ -31,11 +31,11 @@ namespace Cslib
 
 namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
-theorem ddfinal {M N x}
+theorem exists_head_reduction_to_fvar_app {M N x}
   (hm : ClosedUnderApp fvar_or_combinator M)
   (hn :  Relation.Normal FullBetaEta N)
   (steps : M ↠βηᶠ (fvar x).app N) :
-  ∃ i Z, (List.replicate i (fvar "x")).foldl app M ↠𝒽 (fvar x).app Z /\ Z ↠βηᶠ N := by
+  ∃ l i Z, (List.replicate i (fvar "y")).foldl app M ↠𝒽 List.foldl app (fvar x) (Z::l) /\ Z ↠βηᶠ N := by
   have h_betaeta_nf : Relation.Normal FullBetaEta ((fvar x).app N) := by
     rw [exists_beta_normal_fvar_app_of_beta_eta]
     grind
@@ -54,10 +54,6 @@ theorem ddfinal {M N x}
   rw [beta_nf_eq] at h1
   obtain h2 := redex_n_apps_n_abs_of_apps "y" (List.foldl app (fvar x) (E :: l)) i (by grind)
   rw [openDown_multiapp, openDown_fvar] at h2
-  -- have : (abs^[i] (List.foldl app (fvar "x") l)).LC := by
-  --   rw [beta_nf_eq] at beta_nf_lc
-  --   rw [<- lcAt_iff_LC, absn_lcat, app_lcat] at *
-  --   grind
   have recursive_app_lc : (List.foldl app (fvar x) (List.map (openDown i (fvar "y")) (E :: l))).LC := by
     cases FullBeta.steps_lc_or_rfl (h1.trans h2) with
     | inl h => grind
@@ -73,42 +69,17 @@ theorem ddfinal {M N x}
   subst P
   have hm2 : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
   have h2steps := HeadReduction2.headneutral_exists (closedunderapp_multiapp_cons (by grind) (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
-
-  have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
-  have heq : (List.foldl app ((fvar x).app N) (List.replicate i (fvar "y"))) =
-  (List.foldl app (fvar x) (N :: List.replicate i (fvar "y"))) := by grind
-  rw [heq] at g
-  cases hl' with | cons hl' _ =>
-  cases hl'' with | cons hl'' _ =>
-  sorry
-
-/-
-  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (by grind)⟩ _ h2steps
   cases hl' with | cons hl' _ =>
   cases hl'' with | cons hl'' _ =>
   rw [openDown_lc (by assumption)] at hl'
   obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta (FullBetaEta.from_eta _ _ he) (FullBetaEta.from_beta _ _ hl')
-  have := Relation.Normal.reflTransGen_eq (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) hz1
-  subst_vars
-  apply FullBetaEta.steps_fv at hz2
-  apply FullBeta.steps_fv at hl''
-  simp at hz2
-  have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [closedunderapp_fv (by grind) hm]) hq
-  cases hq with | base hq =>
-  rcases hq with _|hq|_ <;> try grind
-  obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
-  sorry
-  -- h2steps
--/
+  have := Relation.Normal.reflTransGen_eq (by grind) hz1
+  subst Z
+  exact ⟨_, _, _, h2steps, .trans (FullBetaEta.from_beta _ _ hl'') hz2⟩
 
 
 
-
-
-
-
-
-theorem final {n M}
+theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
   (steps : ((M.app (fvar "x")).app (fvar "y")) ↠βηᶠ (fvar "x").app ((fvar "y").app (H n))) : False := by
@@ -156,11 +127,11 @@ theorem final {n M}
   rw [heq] at g
   cases hl' with | cons hl' _ =>
   cases hl'' with | cons hl'' _ =>
-  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (by grind)⟩ _ h2steps
   rw [openDown_lc (by assumption)] at hl'
   obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta (FullBetaEta.from_eta _ _ he) (FullBetaEta.from_beta _ _ hl')
   have := Relation.Normal.reflTransGen_eq (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) hz1
   subst_vars
+  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (by grind)⟩ _ h2steps
   apply FullBetaEta.steps_fv at hz2
   apply FullBeta.steps_fv at hl''
   simp at hz2
