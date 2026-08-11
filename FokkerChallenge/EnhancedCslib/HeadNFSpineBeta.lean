@@ -80,25 +80,6 @@ theorem forall₂_betaStar_concat {l₁ l₂ : List (Term Var)} {a b : Term Var}
   | nil => exact List.Forall₂.cons hab List.Forall₂.nil
   | cons hh _ ih => exact List.Forall₂.cons hh ih
 
-/-! ## Spines are injective -/
-
-/-- The head variable and the argument list of a spine are uniquely determined. -/
-theorem spine_inj {x y : Var} {l₁ l₂ : List (Term Var)}
-    (h : spine x l₁ = spine y l₂) : x = y ∧ l₁ = l₂ := by
-  induction l₁ using List.reverseRecOn generalizing l₂ with
-  | nil =>
-      rcases List.eq_nil_or_concat l₂ with rfl | ⟨l₀, b, rfl⟩
-      · exact ⟨by cases h; rfl, rfl⟩
-      · rw [List.concat_eq_append, spine_concat, spine_nil] at h; cases h
-  | append_singleton l₀ a ih =>
-      rcases List.eq_nil_or_concat l₂ with rfl | ⟨l₀', b, rfl⟩
-      · rw [spine_concat, spine_nil] at h; cases h
-      · rw [List.concat_eq_append, spine_concat, spine_concat] at h
-        injection h with h₁ h₂
-        obtain ⟨hxy, rfl⟩ := ih h₁
-        subst h₂
-        exact ⟨hxy, by simp⟩
-
 /-! ## β-reduction out of a spine -/
 
 /-- A β-step out of a spine `x N₁ … Nₖ` takes place inside one of the
@@ -141,15 +122,6 @@ theorem beta_steps_preserve_fvar_apps {x : String} {M : Term String}
       List.Forall₂ (Relation.ReflTransGen FullBeta) l l' :=
   spine_fullBetaStar_inv (x := x) (l := l) steps
 
-
-/-- A head neutral term is a spine headed by a free variable. -/
-theorem HeadNeutral.exists_spine {M : Term Var} (h : HeadNeutral M) :
-    ∃ (x : Var) (l : List (Term Var)), M = spine x l := by
-  induction h with
-  | fvar x => exact ⟨x, [], rfl⟩
-  | @app A B _ _ ih =>
-      obtain ⟨x, l, rfl⟩ := ih
-      exact ⟨x, l ++ [B], by rw [spine_concat]⟩
 
 /-! ## The main theorem -/
 

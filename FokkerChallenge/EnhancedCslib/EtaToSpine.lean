@@ -2,6 +2,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.Basic
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullBeta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.FullEta
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
+import FokkerChallenge.EnhancedCslib.HeadSN
 
 namespace Cslib
 
@@ -91,6 +92,32 @@ theorem spine_eq_app {x : Var} {l : List (Term Var)} {P Q : Term Var}
   · rw [h'] at h
     cases h
     exact ⟨l₀, hl, rfl⟩
+
+/-- The head variable and the argument list of a spine are uniquely determined. -/
+theorem spine_inj {x y : Var} {l₁ l₂ : List (Term Var)}
+    (h : spine x l₁ = spine y l₂) : x = y ∧ l₁ = l₂ := by
+  induction l₁ using List.reverseRecOn generalizing l₂ with
+  | nil =>
+      rcases List.eq_nil_or_concat l₂ with rfl | ⟨l₀, b, rfl⟩
+      · exact ⟨by cases h; rfl, rfl⟩
+      · rw [List.concat_eq_append, spine_concat, spine_nil] at h; cases h
+  | append_singleton l₀ a ih =>
+      rcases List.eq_nil_or_concat l₂ with rfl | ⟨l₀', b, rfl⟩
+      · rw [spine_concat, spine_nil] at h; cases h
+      · rw [List.concat_eq_append, spine_concat, spine_concat] at h
+        injection h with h₁ h₂
+        obtain ⟨hxy, rfl⟩ := ih h₁
+        subst h₂
+        exact ⟨hxy, by simp⟩
+
+/-- A head neutral term is a spine headed by a free variable. -/
+theorem HeadNeutral.exists_spine {M : Term Var} (h : HeadNeutral M) :
+    ∃ (x : Var) (l : List (Term Var)), M = spine x l := by
+  induction h with
+  | fvar x => exact ⟨x, [], rfl⟩
+  | @app A B _ _ ih =>
+      obtain ⟨x, l, rfl⟩ := ih
+      exact ⟨x, l ++ [B], by rw [spine_concat]⟩
 
 /-! ## Inversion lemmas for η-reduction -/
 
