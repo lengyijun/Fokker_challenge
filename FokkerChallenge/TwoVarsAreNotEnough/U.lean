@@ -68,7 +68,7 @@ theorem two_vars_are_enough_openRec_U {n t N1 N0 x z}
                 . grind
                 . apply closedunderapp_lc U.LC h1
 
-theorem HeadReduction2_preserve_closedUnderApp_U {M N n x z}
+theorem HeadReduction2_step_preserve_closedUnderApp_U {M N n x z}
   (hmn: HeadReduction2 M N)
   (hm : ClosedUnderApp (U n x z) M) :
   ClosedUnderApp (U n x z) N  := by
@@ -134,6 +134,13 @@ theorem HeadReduction2_preserve_closedUnderApp_U {M N n x z}
                           grind
                         . grind
 
+theorem HeadReduction2_steps_preserve_closedUnderApp_U {M N n x z}
+  (steps : M ↠𝒽 N)
+  (hm : ClosedUnderApp (U n x z) M) :
+  ClosedUnderApp (U n x z) N  := by
+  induction steps with grind [HeadReduction2_step_preserve_closedUnderApp_U]
+
+
 theorem closedUnderApp_reduce_to_H_false {M N n x z}
   (hxz : x ≠ z)
   (hm : ClosedUnderApp (U n x z) M)
@@ -145,7 +152,7 @@ theorem closedUnderApp_reduce_to_H_false {M N n x z}
   | refl => exact ⟨[], by grind⟩
   | head h' h ih => cases h' with
   | reflTrans h' =>
-  obtain ⟨l, ih, _⟩ := ih (HeadReduction2_preserve_closedUnderApp_U h' hm)
+  obtain ⟨l, ih, _⟩ := ih (HeadReduction2_step_preserve_closedUnderApp_U h' hm)
   exact ⟨l, .trans (HeadReduction2.step_2_beta h' (closedunderapp_lc U.LC hm)) ih, by grind⟩
   | throughAbsApp => cases hm with
     | app hn hc => cases hn with | base hn =>
@@ -189,3 +196,80 @@ theorem U_le_fvar_or_combinator{i y z} : ∀ x, U i y z x -> ClosedUnderApp fvar
     rw [List.foldl_concat]
     simp [flip]
     exact .app (by grind) (by grind)
+
+theorem U_replicate {n x z i M} :
+  ClosedUnderApp (U n x z) M ->
+  ClosedUnderApp (U n x z) (List.foldl app M (List.replicate i (fvar x))) := by
+  induction i generalizing M with grind
+
+theorem U_foldl_z {Z l n x z}
+  (h : ClosedUnderApp (U n x z) (List.foldl app (fvar z) (Z :: l))):
+  ClosedUnderApp (U n x z) Z := by
+  induction l using List.reverseRecOn with
+  | nil =>  simp_all
+            cases h with
+            | app _ _ => grind
+            | base h => rcases h with _|_|⟨l, h, hl⟩
+                        . grind
+                        . grind
+                        . exfalso
+                          induction l using List.reverseRecOn with
+                          | nil => simp_all
+                          | append_singleton l a _ =>
+                          simp_all [flip]
+                          obtain ⟨_, h⟩ := h
+                          subst_vars
+                          specialize hl (fvar z) (by grind)
+                          grind
+  | append_singleton l a _ =>
+  simp at h
+  cases h with
+  | app _ _ => grind
+  | base h => rcases h with _|_|⟨l, h, hl⟩
+              . grind
+              . grind
+              . exfalso
+                induction l using List.reverseRecOn with
+                | nil => simp_all
+                | append_singleton _ a _ =>
+                simp_all [flip]
+                obtain ⟨_, h⟩ := h
+                subst_vars
+                obtain ⟨_, _⟩ := hl (List.foldl app ((fvar z).app Z) l) (by grind)
+                induction l  using List.reverseRecOn with grind
+
+theorem U_foldl_x {Z l n x z}
+  (h : ClosedUnderApp (U n x z) (List.foldl app (fvar x) (Z :: l))):
+  ClosedUnderApp (U n x z) Z := by
+  induction l using List.reverseRecOn with
+  | nil =>  simp_all
+            cases h with
+            | app _ _ => grind
+            | base h => rcases h with _|_|⟨l, h, hl⟩
+                        . grind
+                        . grind
+                        . exfalso
+                          induction l using List.reverseRecOn with
+                          | nil => simp_all
+                          | append_singleton l a _ =>
+                          simp_all [flip]
+                          obtain ⟨_, h⟩ := h
+                          subst_vars
+                          specialize hl (fvar x) (by grind)
+                          grind
+  | append_singleton l a _ =>
+  simp at h
+  cases h with
+  | app _ _ => grind
+  | base h => rcases h with _|_|⟨l, h, hl⟩
+              . grind
+              . grind
+              . exfalso
+                induction l using List.reverseRecOn with
+                | nil => simp_all
+                | append_singleton _ a _ =>
+                simp_all [flip]
+                obtain ⟨_, h⟩ := h
+                subst_vars
+                obtain ⟨_, _⟩ := hl (List.foldl app ((fvar x).app Z) l) (by grind)
+                induction l  using List.reverseRecOn with grind
