@@ -249,65 +249,6 @@ theorem openRec_fvar_eq_self_of_notMem {P : Term Var} {k : ℕ} {y : Var}
       simp only [openRec, fv, Finset.mem_union, not_or] at h ⊢
       rw [iha h.1, ihb h.2]
 
-/-- Refinement of `openRec_absN_spine`: opening reflects the shape
-`absN n (spine x l)` *argument by argument*. -/
-theorem openRec_absN_spine_args {T : Term Var} {k n : ℕ} {x y : Var} {l : List (Term Var)}
-    (hxy : x ≠ y) (h : openRec k (fvar y) T = abs^[n] (spine x l)) :
-    ∃ l', T = abs^[n] (spine x l') ∧ l'.map (openRec (k + n) (fvar y)) = l := by
-  induction T generalizing k n l with
-  | bvar i =>
-      cases n with
-      | zero =>
-          simp_all
-          simp only [openRec] at h
-          split_ifs at h
-          · exact absurd (spine_eq_fvar h.symm).1 hxy
-          · exact absurd h.symm spine_ne_bvar
-      | succ m =>
-          rw [add_comm, Function.iterate_add, openRec_bvar] at h
-          simp at h
-          split_ifs at h
-  | fvar z =>
-      cases n with
-      | zero =>
-          simp_all
-          simp only [openRec] at h
-          obtain ⟨hx, hl⟩ := spine_eq_fvar h.symm
-          exact ⟨[], by rw [spine_nil, hx], by simp [hl]⟩
-      | succ m =>
-          rw [add_comm, Function.iterate_add] at h
-          simp only [openRec] at h
-          cases h
-  | abs S ih =>
-      cases n with
-      | zero =>
-          simp_all
-          simp only [openRec] at h
-          exact absurd h.symm spine_ne_abs
-      | succ m =>
-          rw [add_comm, Function.iterate_add] at h
-          simp only [openRec] at h
-          obtain ⟨l', hS, hmap⟩ := ih (by injection h)
-          refine ⟨l', by rw [add_comm, Function.iterate_add, hS]; simp, ?_⟩
-          rw [show k + (m + 1) = k + 1 + m by omega]
-          exact hmap
-  | app P Q ihP _ =>
-      cases n with
-      | zero =>
-          simp_all
-          simp only [openRec] at h
-          obtain ⟨l₀, hl, hP'⟩ := spine_eq_app h.symm
-          obtain ⟨l₀', hP, hmap⟩ := ihP (n := 0) (l := l₀) (by simp; exact hP')
-          refine ⟨l₀' ++ [Q], ?_, ?_⟩
-          · simp_all
-          · simp only [List.map_append, List.map_cons, List.map_nil]
-            simp only [Nat.add_zero] at hmap
-            rw [hmap, hl]
-      | succ m =>
-          rw [add_comm, Function.iterate_add] at h
-          simp only [openRec] at h
-          cases h
-
 theorem forall₂_snoc_right {α β : Type _} (R : α → β → Prop) (l₀ : List α) (l : List β) (b : β)
     (h : List.Forall₂ R l₀ (l ++ [b])) :
     ∃ l₀' a, l₀ = l₀' ++ [a] ∧ List.Forall₂ R l₀' l ∧ R a b := by
@@ -343,6 +284,31 @@ theorem fullEtaStar_subst {M N : Term Var} (h : M ↠ηᶠ N) (x : Var) {u : Ter
   induction h with
   | refl => exact Relation.ReflTransGen.refl
   | tail _ hstep ih => exact ih.tail (FullEta.step_subst_cong_l _ _ _ hstep hu)
+
+theorem forall₂_refl {α : Type _} {R : α → α → Prop} (l : List α) :
+    List.Forall₂ (Relation.ReflTransGen R) l l := by
+  induction l with
+  | nil => exact List.Forall₂.nil
+  | cons a l ih => exact List.Forall₂.cons Relation.ReflTransGen.refl ih
+
+theorem forall₂_trans {α : Type _} {R : α → α → Prop} {l₁ l₂ l₃ : List α}
+    (h₁ : List.Forall₂ (Relation.ReflTransGen R) l₁ l₂)
+    (h₂ : List.Forall₂ (Relation.ReflTransGen R) l₂ l₃) :
+          List.Forall₂ (Relation.ReflTransGen R) l₁ l₃ := by
+  induction h₁ generalizing l₃ with
+  | nil => cases h₂; exact List.Forall₂.nil
+  | cons hab _ ih =>
+      cases h₂ with
+      | cons hbc hrest => exact List.Forall₂.cons (hab.trans hbc) (ih hrest)
+
+theorem forall₂_sub {α : Type _} {R1 R2 : α → α → Prop} {l₁ l₂ : List α}
+    (h : R1  ≤  R2)
+    (h₁ : List.Forall₂ R1 l₁ l₂) :
+          List.Forall₂ R2 l₁ l₂  := by
+  induction h₁ with
+  | nil => exact List.Forall₂.nil
+  | cons g _ ih => exact List.Forall₂.cons (h _ _ g) ih
+
 
 theorem forall₂_concat {α β : Type _} {R : α → β → Prop} {as : List α} {bs : List β} {a : α}
     {b : β} (h : List.Forall₂ R as bs) (hab : R a b) :

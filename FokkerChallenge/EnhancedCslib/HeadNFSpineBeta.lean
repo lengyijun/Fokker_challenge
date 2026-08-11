@@ -56,30 +56,6 @@ theorem fullBetaStar_abs_inv {T N : Term Var} (h : (abs T) ↠βᶠ N) :
       obtain ⟨T', rfl⟩ := ih
       exact fullBeta_abs_inv hstep
 
-/-! ## Componentwise β-reduction of argument lists -/
-
-theorem forall₂_betaStar_refl (l : List (Term Var)) :
-    List.Forall₂ (Relation.ReflTransGen FullBeta) l l := by
-  induction l with
-  | nil => exact List.Forall₂.nil
-  | cons a l ih => exact List.Forall₂.cons Relation.ReflTransGen.refl ih
-
-theorem forall₂_betaStar_trans {l₁ l₂ l₃ : List (Term Var)}
-    (h₁ : List.Forall₂ (Relation.ReflTransGen FullBeta) l₁ l₂) (h₂ : List.Forall₂ (Relation.ReflTransGen FullBeta) l₂ l₃) :
-    List.Forall₂ (Relation.ReflTransGen FullBeta) l₁ l₃ := by
-  induction h₁ generalizing l₃ with
-  | nil => cases h₂; exact List.Forall₂.nil
-  | cons hab _ ih =>
-      cases h₂ with
-      | cons hbc hrest => exact List.Forall₂.cons (hab.trans hbc) (ih hrest)
-
-theorem forall₂_betaStar_concat {l₁ l₂ : List (Term Var)} {a b : Term Var}
-    (h : List.Forall₂ (Relation.ReflTransGen FullBeta) l₁ l₂) (hab : (Relation.ReflTransGen FullBeta) a b) :
-    List.Forall₂ (Relation.ReflTransGen FullBeta) (l₁ ++ [a]) (l₂ ++ [b]) := by
-  induction h with
-  | nil => exact List.Forall₂.cons hab List.Forall₂.nil
-  | cons hh _ ih => exact List.Forall₂.cons hh ih
-
 /-! ## β-reduction out of a spine -/
 
 /-- A β-step out of a spine `x N₁ … Nₖ` takes place inside one of the
@@ -97,11 +73,11 @@ theorem spine_fullBeta_inv {x : Var} {l : List (Term Var)} {N : Term Var}
       rcases fullBeta_app_inv h with ⟨C, hC, _⟩ | ⟨b', rfl, hb⟩ | ⟨A', rfl, hA⟩
       · exact absurd hC spine_ne_abs
       · exact ⟨l₀ ++ [b'], by rw [spine_concat],
-          forall₂_betaStar_concat (forall₂_betaStar_refl l₀)
+          forall₂_concat (forall₂_refl l₀)
             (Relation.ReflTransGen.single hb)⟩
       · obtain ⟨l₁, rfl, hl₁⟩ := ih hA
         exact ⟨l₁ ++ [b], by rw [spine_concat],
-          forall₂_betaStar_concat hl₁ Relation.ReflTransGen.refl⟩
+          forall₂_concat hl₁ Relation.ReflTransGen.refl⟩
 
 /-- Any number of β-steps out of a spine `x N₁ … Nₖ` only reduce the arguments:
 the reduct is a spine with the same head and componentwise β-reducts as
@@ -110,11 +86,11 @@ theorem spine_fullBetaStar_inv {x : Var} {l : List (Term Var)} {N : Term Var}
     (h : (Relation.ReflTransGen FullBeta) (spine x l) N) :
     ∃ l', N = spine x l' ∧ List.Forall₂ (Relation.ReflTransGen FullBeta) l l' := by
   induction h with
-  | refl => exact ⟨l, rfl, forall₂_betaStar_refl l⟩
+  | refl => exact ⟨l, rfl, forall₂_refl l⟩
   | tail _ hstep ih =>
       obtain ⟨l₁, rfl, hl₁⟩ := ih
       obtain ⟨l₂, rfl, hl₂⟩ := spine_fullBeta_inv hstep
-      exact ⟨l₂, rfl, forall₂_betaStar_trans hl₁ hl₂⟩
+      exact ⟨l₂, rfl, forall₂_trans hl₁ hl₂⟩
 
 theorem beta_steps_preserve_fvar_apps {x : String} {M : Term String}
     {l : List (Term String)} (steps : l.foldl app (fvar x) ↠βᶠ M) :

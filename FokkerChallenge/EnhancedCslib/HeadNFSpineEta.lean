@@ -3,6 +3,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LeftmostReduction
 import FokkerChallenge.EnhancedCslib.HeadSN
 import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
+import FokkerChallenge.EnhancedCslib.HeadNFSpineBeta
 
 namespace Cslib
 
@@ -40,30 +41,6 @@ theorem FullEta_app_inv {A B N : Term Var} (h : FullEta (app A B) N) :
   | appL _ hs => exact Or.inr (Or.inl ⟨_, rfl, hs⟩)
   | appR _ hs => exact Or.inr (Or.inr ⟨_, rfl, hs⟩)
 
-/-! ## Componentwise η-reduction of argument lists -/
-
-theorem forall₂_etaStar_refl (l : List (Term Var)) :
-    List.Forall₂ (Relation.ReflTransGen FullEta) l l := by
-  induction l with
-  | nil => exact List.Forall₂.nil
-  | cons a l ih => exact List.Forall₂.cons Relation.ReflTransGen.refl ih
-
-theorem forall₂_etaStar_trans {l₁ l₂ l₃ : List (Term Var)}
-    (h₁ : List.Forall₂ (Relation.ReflTransGen FullEta) l₁ l₂) (h₂ : List.Forall₂ (Relation.ReflTransGen FullEta) l₂ l₃) :
-    List.Forall₂ (Relation.ReflTransGen FullEta) l₁ l₃ := by
-  induction h₁ generalizing l₃ with
-  | nil => cases h₂; exact List.Forall₂.nil
-  | cons hab _ ih =>
-      cases h₂ with
-      | cons hbc hrest => exact List.Forall₂.cons (hab.trans hbc) (ih hrest)
-
-theorem forall₂_etaStar_concat {l₁ l₂ : List (Term Var)} {a b : Term Var}
-    (h : List.Forall₂ (Relation.ReflTransGen FullEta) l₁ l₂) (hab : (Relation.ReflTransGen FullEta) a b) :
-    List.Forall₂ (Relation.ReflTransGen FullEta) (l₁ ++ [a]) (l₂ ++ [b]) := by
-  induction h with
-  | nil => exact List.Forall₂.cons hab List.Forall₂.nil
-  | cons hh _ ih => exact List.Forall₂.cons hh ih
-
 /-! ## η-reduction out of a spine -/
 
 /-- A η-step out of a spine `x N₁ … Nₖ` takes place inside one of the
@@ -81,11 +58,11 @@ theorem spine_FullEta_inv {x : Var} {l : List (Term Var)} {N : Term Var}
       rcases FullEta_app_inv h with ⟨C, hC, _⟩ | ⟨b', rfl, hb⟩ | ⟨A', rfl, hA⟩
       · exact absurd hC spine_ne_abs
       · exact ⟨l₀ ++ [b'], by rw [spine_concat],
-          forall₂_etaStar_concat (forall₂_etaStar_refl l₀)
+          forall₂_concat (forall₂_refl l₀)
             (Relation.ReflTransGen.single hb)⟩
       · obtain ⟨l₁, rfl, hl₁⟩ := ih hA
         exact ⟨l₁ ++ [b], by rw [spine_concat],
-          forall₂_etaStar_concat hl₁ Relation.ReflTransGen.refl⟩
+          forall₂_concat hl₁ Relation.ReflTransGen.refl⟩
 
 /-- Any number of η-steps out of a spine `x N₁ … Nₖ` only reduce the arguments:
 the reduct is a spine with the same head and componentwise η-reducts as
@@ -94,14 +71,29 @@ theorem spine_FullEtaStar_inv {x : Var} {l : List (Term Var)} {N : Term Var}
     (h : (Relation.ReflTransGen FullEta) (spine x l) N) :
     ∃ l', N = spine x l' ∧ List.Forall₂ (Relation.ReflTransGen FullEta) l l' := by
   induction h with
-  | refl => exact ⟨l, rfl, forall₂_etaStar_refl l⟩
+  | refl => exact ⟨l, rfl, forall₂_refl l⟩
   | tail _ hstep ih =>
       obtain ⟨l₁, rfl, hl₁⟩ := ih
       obtain ⟨l₂, rfl, hl₂⟩ := spine_FullEta_inv hstep
-      exact ⟨l₂, rfl, forall₂_etaStar_trans hl₁ hl₂⟩
+      exact ⟨l₂, rfl, forall₂_trans hl₁ hl₂⟩
 
 theorem eta_steps_preserve_fvar_apps {x : String} {M : Term String}
     {l : List (Term String)} (steps : l.foldl app (fvar x) ↠ηᶠ M) :
     ∃ l' : List _, M = l'.foldl app (fvar x) ∧
       List.Forall₂ (Relation.ReflTransGen FullEta) l l' :=
   spine_FullEtaStar_inv (x := x) (l := l) steps
+
+
+theorem beta_eta_steps_preserve_fvar_apps {x : String} {M : Term String}
+    {l : List (Term String)} (steps : l.foldl app (fvar x) ↠βηᶠ M) :
+    ∃ l' : List _, M = l'.foldl app (fvar x) ∧
+      List.Forall₂ (Relation.ReflTransGen FullBetaEta) l l' := by
+  induction steps with
+  | refl => refine ⟨l, by grind, forall₂_refl _⟩
+  | tail _ h ih =>  obtain ⟨l', _, ih⟩ := ih
+                    subst_vars
+                    cases h with
+          | inl h =>  obtain ⟨l, h, g⟩ := beta_steps_preserve_fvar_apps (.single h)
+                      exact ⟨_, h, forall₂_trans ih (forall₂_sub FullBetaEta.from_beta g)⟩
+          | inr h =>  obtain ⟨l, h, g⟩ := eta_steps_preserve_fvar_apps (.single h)
+                      exact ⟨_, h, forall₂_trans ih (forall₂_sub FullBetaEta.from_eta g)⟩
