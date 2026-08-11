@@ -57,3 +57,9 @@ theorem closedunderapp_derive {P Q} {M : Term String}
   (h2 : ClosedUnderApp P M) :
         ClosedUnderApp Q M := by
   induction h2 with grind
+
+theorem closedunderapp_derive2 {P Q} {M : Term String}
+  (h : ∀ x, P x -> ClosedUnderApp Q x)
+  (h2 : ClosedUnderApp P M) :
+        ClosedUnderApp Q M := by
+  induction h2 with grind

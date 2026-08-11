@@ -175,3 +175,16 @@ theorem closedUnderApp_reduce_to_H_false {M N n}
                     specialize h hx
                     have : "x" ∈ ({"z"} : Finset String) := by grind
                     grind
+
+theorem U_le_fvar_or_combinator{i y z} : ∀ x, U i y z x -> ClosedUnderApp fvar_or_combinator x := by
+  intro x hx
+  rcases hx with _|_|⟨l, h, _⟩
+  . grind
+  . grind
+  . subst x
+    induction l using List.reverseRecOn with
+    | nil => grind
+    | append_singleton l a _ =>
+    rw [List.foldl_concat]
+    simp [flip]
+    exact .app (by grind) (by grind)
