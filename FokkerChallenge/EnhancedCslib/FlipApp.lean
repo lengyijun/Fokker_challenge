@@ -87,6 +87,7 @@ lemma app_eq {x y} {l l': List (Term String)}:
     | nil => simp
     | append_singleton l a _ => simp; grind
 
+/-
 lemma beta_step_preserve_fvar_apps {x M} {l: List (Term String)}
   (step : l.foldl app (fvar x) ⭢βᶠ M)  :
   ∃ l': List _, M = l'.foldl app (fvar x) := by
@@ -107,11 +108,7 @@ lemma beta_step_preserve_fvar_apps {x M} {l: List (Term String)}
   | appR h g => obtain ⟨l', ih⟩ := ih g
                 use (l' ++ [a])
                 grind
-
-lemma beta_steps_preserve_fvar_apps {x M} {l: List (Term String)}
-  (steps : l.foldl app (fvar x) ↠βᶠ M) :
-  ∃ l': List _, M = l'.foldl app (fvar x) := by
-  induction steps with grind [beta_step_preserve_fvar_apps]
+-/
 
 lemma listfullBeta_exists (P : Term String -> Prop) (Ns : List (Term String))
   (h_lc : ∀ M ∈ Ns, LC M)

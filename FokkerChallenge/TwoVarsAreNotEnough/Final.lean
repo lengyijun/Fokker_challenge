@@ -18,9 +18,11 @@ import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.EtaToSpine
 import FokkerChallenge.EnhancedCslib.HeadSN
 import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
+import FokkerChallenge.EnhancedCslib.HeadNFSpineBeta
 import FokkerChallenge.TwoVarsAreNotEnough.Basic
 import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
+import FokkerChallenge.TwoVarsAreNotEnough.Q
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -65,9 +67,11 @@ theorem final {n M}
   rw [hasHNF_iff_headStepStar_headNF] at hnf
   obtain ⟨P, hsteps, hnf⟩ := hnf
   obtain ⟨Z, hz1, hz2⟩ := confluent_fullBeta (h1.trans h2) (HeadStepStar.toFullBetaStar hsteps)
-  obtain ⟨l', hl'⟩ := beta_steps_preserve_fvar_apps hz1
+  obtain ⟨l', _, hl'⟩ := beta_steps_preserve_fvar_apps hz1
   subst Z
-  obtain ⟨l'', _⟩:= steps_headnf_preserve_multiapp hnf hz2
+  obtain ⟨l'', _, _⟩:= steps_headnf_preserve_multiapp hnf hz2
   subst P
-  have := HeadReduction2.head_nf_exists (recursive_app_fvar_fvar_or_combinator ?_) (HeadNF.of_not_isAbs hnf ?_) hsteps
-  all_goals sorry
+  have hm2 : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
+  have h2steps := HeadReduction2.head_nf_exists (recursive_app_fvar_fvar_or_combinator (by grind)) (HeadNF.of_not_isAbs hnf (by cases l'' using List.reverseRecOn <;> grind)) hsteps
+  obtain ⟨_, _, _⟩ := steps_closedUnderApp_unroll_q hm2 ⟨by grind, closedUnderApp_app_y_iterate (.app (.base (by grind)) (by grind)), recursive_app_fvar_fvar_or_combinator (by grind)⟩ _ h2steps
+  sorry

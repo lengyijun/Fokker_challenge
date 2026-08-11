@@ -366,23 +366,3 @@ theorem steps_beta_preserve_normal_headstep {M N : Term Var}
                 apply HeadNF.of_fullBetaStar steps
                 rw [headNF_iff_no_headStep] <;> grind
                 grind
-
-lemma steps_beta_normal_preserve_multiapp {x M} {l: List (Term Var)}
-  (h_normal : Relation.Normal HeadStep M)
-  (steps : M ↠βᶠ l.foldl app (fvar x)) :
-  ∃ l': List _, M = l'.foldl app (fvar x) := by
-  induction steps using Relation.ReflTransGen.head_induction_on with
-  | refl => grind
-  | head h' h ih =>
-  obtain ⟨l, ih⟩ := ih (steps_beta_preserve_normal_headstep (.single h') h_normal)
-  subst_vars
-  apply step_beta_normal_preserve_multiapp h_normal h'
-
-lemma steps_headnf_preserve_multiapp {x M} {l: List (Term Var)}
-  (h_normal : HeadNF M)
-  (steps : M ↠βᶠ l.foldl app (fvar x)) :
-  ∃ l': List _, M = l'.foldl app (fvar x) := by
-    cases FullBeta.steps_lc_or_rfl steps with
-    | inr => grind
-    | inl h =>  apply steps_beta_normal_preserve_multiapp ?_ steps
-                rw [<- headNF_iff_no_headStep] <;> grind
