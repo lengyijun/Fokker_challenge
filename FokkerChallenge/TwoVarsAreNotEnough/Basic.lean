@@ -13,6 +13,7 @@ import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.List
+import FokkerChallenge.EnhancedCslib.HeadNFSpineEta
 -- import FokkerChallenge.EnhancedCslib.Spine
 import FokkerChallenge.EnhancedCslib.ReflTransGenWithSteps
 import FokkerChallenge.EnhancedCslib.HeadRed
@@ -289,6 +290,17 @@ theorem beta_eta_nf_contain_x {M N : Term String} (h : Relation.Normal FullBetaE
     specialize hn _ .refl
     apply FullBetaEta.steps_fv at hz1
     grind
+
+theorem beta_eta_spline_contain_x {Ns : List _} {M : Term String}
+  (steps : M ↠βηᶠ (Ns.foldl app (fvar "x"))) : contain_x M  := by
+    intros t ht
+    obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta ht steps
+    obtain ⟨l, _, _⟩ := beta_eta_steps_preserve_fvar_apps hz2
+    subst_vars
+    apply FullBetaEta.steps_fv at hz1
+    apply hz1
+    rw [multiapp_fv]
+    grind [union_foldl]
 
 
 /-

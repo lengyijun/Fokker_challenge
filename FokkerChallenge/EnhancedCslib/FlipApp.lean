@@ -11,7 +11,7 @@ namespace Cslib
 namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 lemma step_flip_app_l {R} {M M'} {Ns : List (Term String)} (steps : Xi R M M') (lc_Ns : ∀ N ∈ Ns, LC N) :
-    Xi R (Ns.foldl (flip app) M)  (Ns.foldl (flip app) M') := by
+    Xi R (Ns.foldl (flip app) M) (Ns.foldl (flip app) M') := by
   induction Ns generalizing M M' with
   | nil => grind
   | cons head tail ih =>  simp [flip]
@@ -19,7 +19,7 @@ lemma step_flip_app_l {R} {M M'} {Ns : List (Term String)} (steps : Xi R M M') (
 
 lemma steps_flip_app_l {R} {M M'} {Ns : List (Term String)} (steps : Relation.ReflTransGen (Xi R) M M')
     (lc_Ns : ∀ N ∈ Ns, LC N) :
-    Relation.ReflTransGen (Xi R)  (Ns.foldl (flip app) M) (Ns.foldl (flip app) M') := by
+    Relation.ReflTransGen (Xi R) (Ns.foldl (flip app) M) (Ns.foldl (flip app) M') := by
   induction steps <;> grind [step_flip_app_l]
 
 lemma flip_app_fv {M} {Ns : List (Term String)}:
