@@ -163,11 +163,28 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
   | succ n =>
   have steps := FullBetaEta.steps_app_l_cong (FullBetaEta.steps_app_l_cong steps (LC.fvar "x")) (LC.fvar "y")
   have steps := steps.trans (FullBetaEta.from_beta _ _ H_succ_reduce)
-  obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) hm) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
-  -- have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
-  have  : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
-  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := M) (by grind) ⟨(by sorry), closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (by grind) (by grind)) (by grind))⟩ _ h
-  sorry
+  obtain ⟨l, i, N, h, hn⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) hm) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  have : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
+  have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+  have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H n))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (H n)) :: List.replicate i (fvar "y"))) := by grind
+  rw [heq] at g
+  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := M) (by grind) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (by grind) (by grind)) (by grind))⟩ _ h
+  apply FullBetaEta.steps_fv at hn
+  have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [closedunderapp_fv (by grind) hm]) hq
+  cases hq with | base hq =>
+  rcases hq with _|hq|_ <;> try grind
+  obtain ⟨l, beta_steps, _⟩ := unroll_2_vars_are_enough_foldl (by grind) hq
+  obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta _ _ (FullBeta.redex_app_l_cong  beta_steps (LC.fvar "y")))
+  have h_betaeta_nf : Relation.Normal FullBetaEta ((fvar "x").app ((fvar "y").app (H n))) := by
+    rw [exists_beta_normal_fvar_app_of_beta_eta, exists_beta_normal_fvar_app_of_beta_eta]
+    apply normal_H
+  have := Relation.Normal.reflTransGen_eq h_betaeta_nf hz1
+  subst Z
+  apply no_reduction_to_Hn_with_depth_bound_U (.app (.base ?_) (by grind)) hz2
+  right
+  right
+  refine ⟨_, rfl, ?_⟩
+  . sorry
 
 
 /-
