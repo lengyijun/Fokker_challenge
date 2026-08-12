@@ -164,8 +164,9 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
   have steps := FullBetaEta.steps_app_l_cong (FullBetaEta.steps_app_l_cong steps (LC.fvar "x")) (LC.fvar "y")
   have steps := steps.trans (FullBetaEta.from_beta _ _ H_succ_reduce)
   obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) hm) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
-  have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
-  -- obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (by sorry) ⟨beta_eta_spline_contain_x (by sorry), closedunderapp_multiapp_cons (by grind) (by sorry), closedunderapp_multiapp_cons (by grind) (by sorry)⟩ _ h
+  -- have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+  have  : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
+  obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := M) (by grind) ⟨(by sorry), closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (by grind) (by grind)) (by grind))⟩ _ h
   sorry
 
 
