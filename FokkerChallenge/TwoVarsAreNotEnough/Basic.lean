@@ -275,14 +275,16 @@ theorem recursive_app_fvar_fvar_or_combinator {i y M}
 @[scoped grind]
 def contain_x (M : Term String) := ∀ Y, M ↠βηᶠ Y -> "x" ∈ Y.fv
 
-theorem beta_eta_nf_contain_x {M N : Term String} (h : Relation.Normal FullBetaEta N)
-  (steps : M ↠βηᶠ N) (hn : contain_x N) : contain_x M  := by
+theorem beta_eta_nf_contain_x {M N : Term String}
+  (steps : M ↠βηᶠ N)
+  (h : Relation.Normal FullBetaEta N)
+  (hn : "x" ∈ N.fv) : contain_x M  := by
     intros t ht
     obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta ht steps
     have := Relation.Normal.reflTransGen_eq h hz2
     subst_vars
-    specialize hn _ .refl
     apply FullBetaEta.steps_fv at hz1
+    apply hz1
     grind
 
 theorem beta_eta_spline_contain_x {Ns : List _} {M : Term String}
