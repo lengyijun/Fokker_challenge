@@ -141,9 +141,9 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
       right
       grind
 
-theorem no_reduction_to_Hn_with_depth_bound {fs}
+theorem no_reduction_to_Hn_with_depth_bound (fs)
   (hl : ∀ t ∈ fs, t.abs_two_vars_are_enough) : not_basises fs := by
-  refine ⟨H (((fs.map depth).max?).getD 0), H.LC, H_fv, ?_⟩
+  refine ⟨H ((((fs.map depth).max?).getD 0) + 1), H.LC, H_fv, ?_⟩
   intros M hm steps
   generalize hi : ((fs.map depth).max?).getD 0 = i
   rw [hi] at steps
@@ -166,7 +166,7 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
   obtain ⟨l, i, N, h, hn⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) hm) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
   have : ClosedUnderApp fvar_or_combinator M := closedunderapp_derive (by grind) hm
   have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
-  have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H n))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (H n)) :: List.replicate i (fvar "y"))) := by grind
+  have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H (n+1)))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (H (n+1))) :: List.replicate i (fvar "y"))) := by grind
   rw [heq] at g
   obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := M) (by grind) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (by grind) (by grind)) (by grind))⟩ _ h
   apply FullBetaEta.steps_fv at hn
@@ -175,7 +175,7 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
   rcases hq with _|hq|_ <;> try grind
   obtain ⟨l, beta_steps, _⟩ := unroll_2_vars_are_enough_foldl (by grind) hq
   obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta _ _ (FullBeta.redex_app_l_cong  beta_steps (LC.fvar "y")))
-  have h_betaeta_nf : Relation.Normal FullBetaEta ((fvar "x").app ((fvar "y").app (H n))) := by
+  have h_betaeta_nf : Relation.Normal FullBetaEta ((fvar "x").app ((fvar "y").app (H (n+1)))) := by
     rw [exists_beta_normal_fvar_app_of_beta_eta, exists_beta_normal_fvar_app_of_beta_eta]
     apply normal_H
   have := Relation.Normal.reflTransGen_eq h_betaeta_nf hz1
@@ -184,7 +184,9 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
   right
   right
   refine ⟨_, rfl, ?_⟩
-  . sorry
+  apply genfinset_depth at hm
+  rw [hi] at *
+  grind
 
 
 /-
