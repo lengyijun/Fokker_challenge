@@ -137,6 +137,7 @@ theorem unroll_iff {M N Z : Term String}
                   exact h2
                   apply unroll.LC (by assumption) m_lc
 
+/-
 theorem unroll_fvar {M : Term String} {x y}
   (m_lc : M.LC)
   (hx : unroll M (fvar x))
@@ -148,3 +149,4 @@ theorem unroll_fvar {M : Term String} {x y}
   | inl h =>  rcases Relation.ReflTransGen.cases_head h with _|⟨_, g, _⟩
               . grind
               . cases g with | reflTrans g => cases g
+-/

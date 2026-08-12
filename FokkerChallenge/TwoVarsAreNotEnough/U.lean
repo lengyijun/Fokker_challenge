@@ -346,9 +346,9 @@ theorem U0 {x y M} (h : (U 0 x y) M) : (fun t => t.IsFvar \/ t.IsBvar) M := by
   . grind
   . grind
   . cases l with
-  | nil => grind
-  | cons head tail => specialize hl head (by grind)
-                      grind
+    | nil => grind
+    | cons head tail => specialize hl head (by grind)
+                        grind
 
 theorem app_U0 {x y M} (h : ClosedUnderApp (U 0 x y) M) : ClosedUnderApp (fun t => t.IsFvar \/ t.IsBvar) M := by
   induction h with grind [U0]
