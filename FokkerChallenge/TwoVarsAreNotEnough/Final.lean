@@ -96,11 +96,14 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
   have hz := U_subst_x_closedunderapp "z" (by grind) (U_subst_z_closedunderapp "z" (by grind) hz)
   cases n with
   | zero => have steps := steps.trans (FullBetaEta.from_beta _ _ H_0_reduce)
-            obtain ⟨l, i, Z, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
+            obtain ⟨l, i, _, h2steps, _⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
+            have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+            have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (fvar "y"))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (fvar "y")) :: List.replicate i (fvar "y"))) := by grind
+            rw [heq] at g
+            obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := Z["x" := fvar "z"]["y" := fvar "z"]) (closedunderapp_derive2 U_le_fvar_or_combinator hz) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator (by assumption)) (by grind)) (by grind))⟩ _ h2steps
             sorry
   | succ n => sorry
 
-/-
 theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
@@ -163,4 +166,3 @@ theorem no_reduction_to_Hn_with_depth_bound {n M}
   obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
   -- h2steps
   sorry
--/

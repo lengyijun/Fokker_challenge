@@ -14,6 +14,7 @@ theorem foldl_union_replicate_empty {fs : Finset String} (n : ℕ) :
     rw [ih]
     grind
 
+@[scoped grind]
 lemma union_foldl {l : List _} {fs : Finset String}:
   fs ⊆ l.foldl Union.union fs := by
   induction l generalizing fs with grind
