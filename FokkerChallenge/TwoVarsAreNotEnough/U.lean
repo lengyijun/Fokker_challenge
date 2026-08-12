@@ -314,3 +314,30 @@ theorem U_subst_z {n x z y M} (h : (U n x z) M) (hxz : x ≠ z) :
 theorem U_subst_z_closedunderapp (y) {n x z M} (hxz : x ≠ z) (h : ClosedUnderApp (U n x z) M):
   ClosedUnderApp (U n x y) M[z:=fvar y] := by
   induction h with grind [U_subst_z]
+
+theorem U_fv {n x z M}  (h : U n x z M): M.fv ⊆ {x, z} := by
+  rcases h with _|_|⟨l, h, _⟩
+  . grind
+  . grind
+  . subst_vars
+    rw [flip_app_fv]
+    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+    rw [<- List.map_eq_replicate_iff] at h5
+    rw [h5, foldl_union_replicate_empty]
+    grind
+
+theorem app_U_fv {n x z M}  (h : ClosedUnderApp (U n x z) M):
+   M.fv ⊆ {x, z} := by
+   induction h with grind [U_fv]
+
+theorem U_transform (x) {n z M} (h : (U n z z) M) : (U n x z) M := by
+  rcases h with _|_|⟨l, h, _⟩
+  . right
+    right
+    use []
+    grind
+  . grind
+  . grind
+
+theorem app_U_transform (x) {n z M} (h : ClosedUnderApp (U n z z) M) : ClosedUnderApp (U n x z) M := by
+  induction h with grind [U_transform]
