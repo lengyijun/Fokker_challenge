@@ -141,7 +141,7 @@ theorem HeadReduction2_steps_preserve_closedUnderApp_U {M N n x z}
   induction steps with grind [HeadReduction2_step_preserve_closedUnderApp_U]
 
 
-theorem closedUnderApp_reduce_to_H_false {M N n x z}
+theorem closedUnderApp_reduce_to_H_false (x z n) {M N}
   (hxz : x ≠ z)
   (hm : ClosedUnderApp (U n x z) M)
   (hx : x ∈ N.fv)

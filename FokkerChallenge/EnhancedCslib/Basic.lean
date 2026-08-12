@@ -14,4 +14,8 @@ def r_preserves (f: Term String -> Bool) (R : Term String → Term String → Pr
 
 @[scoped grind]
 inductive IsFvar {Var} : Term Var → Prop
-| abs (m : Var) : IsFvar (Term.fvar m)
+| fvar (m : Var) : IsFvar (Term.fvar m)
+
+@[scoped grind]
+inductive IsBvar {Var} : Term Var → Prop
+| bvar (i : Nat) : IsBvar (Term.bvar i)
