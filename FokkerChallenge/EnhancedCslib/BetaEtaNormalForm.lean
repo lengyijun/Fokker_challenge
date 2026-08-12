@@ -8,6 +8,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.EtaPostpone
 import FokkerChallenge.EnhancedCslib.CountBvar
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.EtaNormalForm
+import FokkerChallenge.EnhancedCslib.Closedunderapp
 import Mathlib.Data.Finset.Lattice.Basic
 
 namespace Cslib
@@ -86,6 +87,51 @@ theorem beta_eta_star_of_beta_normal {M N : Term String} (h : Relation.Normal Fu
   | head h' h ih => cases h' with
     | inl h' => grind
     | inr h' => exact .head h' (ih (Etastar_normal (.single h') h))
+
+theorem betaeta_nf_app {M N : Term String}
+  (h : ¬ M.IsAbs)
+  (hm : Relation.Normal FullBetaEta M)
+  (hn : Relation.Normal FullBetaEta N) :
+  Relation.Normal FullBetaEta (M.app N) := by
+  rintro ⟨y, h⟩
+  cases h with
+  | inl h => cases h with
+    | base h => cases h with | beta _ _ => grind
+    | appL _ h => apply hn
+                  refine ⟨_, by left; exact h⟩
+    | appR _ h => apply hm
+                  refine ⟨_, by left; exact h⟩
+  | inr h => cases h with
+    | base h => cases h
+    | appL _ h => apply hn
+                  refine ⟨_, by right; exact h⟩
+    | appR _ h => apply hm
+                  refine ⟨_, by right; exact h⟩
+
+
+theorem betaeta_nf_bfvar {M : Term String} (h : M.IsFvar \/ M.IsBvar) :
+  Relation.Normal FullBetaEta M /\ ¬ M.IsAbs := by
+  cases h with
+  | inl h =>  cases h
+              refine ⟨?_, by grind⟩
+              rintro ⟨y, h⟩
+              cases h with
+              | inl h => cases h with | base h => cases h
+              | inr h => cases h with | base h => cases h
+  | inr h =>  cases h
+              refine ⟨?_, by grind⟩
+              rintro ⟨y, h⟩
+              cases h with
+              | inl h => cases h with | base h => cases h
+              | inr h => cases h with | base h => cases h
+
+theorem app_betaeta_nf_bfvar {M : Term String}
+  (h :  ClosedUnderApp (fun t => t.IsFvar \/ t.IsBvar) M) :
+  Relation.Normal FullBetaEta M /\ ¬ M.IsAbs := by
+  induction h with
+  | base _ => grind [betaeta_nf_bfvar]
+  | app _ _ _ _ => exact ⟨betaeta_nf_app (by grind) (by grind) (by grind), by grind⟩
+
 
 end LambdaCalculus.LocallyNameless.Untyped.Term
 
