@@ -19,6 +19,7 @@ import FokkerChallenge.EnhancedCslib.EtaToSpine
 import FokkerChallenge.EnhancedCslib.HeadSN
 import FokkerChallenge.EnhancedCslib.EtaSpineOpenFv
 import FokkerChallenge.EnhancedCslib.HeadNFSpineBeta
+import FokkerChallenge.EnhancedCslib.GenFinset
 import FokkerChallenge.TwoVarsAreNotEnough.Basic
 import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
@@ -98,7 +99,7 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
   | zero => have steps := steps.trans (FullBetaEta.from_beta _ _ H_0_reduce)
             obtain ⟨l, i, _, h2steps, hw⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
             have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
-            have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (fvar "y"))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (fvar "y")) :: List.replicate i (fvar "y"))) := by grind
+            have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (fvar "y"))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") (((fvar "y").app (fvar "y")) :: List.replicate i (fvar "y"))) := by grind
             rw [heq] at g
             obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := Z["x" := fvar "z"]["y" := fvar "z"]) (closedunderapp_derive2 U_le_fvar_or_combinator hz) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator (by assumption)) (by grind)) (by grind))⟩ _ h2steps
             apply FullBetaEta.steps_fv at hw
@@ -140,28 +141,31 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
       right
       grind
 
-theorem no_reduction_to_Hn_with_depth_bound {fs M}
-  (hl : ∀ t ∈ fs, t.abs_two_vars_are_enough)
-  (hm : GenFinset fs M) : not_basis M := by
+theorem no_reduction_to_Hn_with_depth_bound {fs}
+  (hl : ∀ t ∈ fs, t.abs_two_vars_are_enough) : not_basises fs := by
   refine ⟨H (((fs.map depth).max?).getD 0), H.LC, H_fv, ?_⟩
   intros t ht steps
   generalize hi : ((fs.map depth).max?).getD 0 = i
   rw [hi] at steps
+  have g : ∀ t ∈ fs, t.depth <= i := by
+    intro t ht
+    have hle : t.depth ≤ (List.map depth fs).max?.getD 0 :=
+      List.mem_le_max?_getD (List.mem_map_of_mem ht)
+    omega
   cases i with
-  | succ n => sorry
   | zero => cases fs with
-    | nil => clear ht; induction hm <;> grind
+    | nil => clear steps; induction ht <;> grind
     | cons head tail =>
-        have : ∀ t ∈ head :: tail, t.depth <= 0 := by
-          intro t ht
-          by_contra h
-          have hpos : 0 < t.depth := Nat.lt_of_not_ge h
-          have hmem : t.depth ∈ List.map depth (head :: tail) := by
-            exact List.mem_map.2 ⟨t, ht, rfl⟩
-          have hmax : t.depth ≤ (List.map depth (head :: tail)).max?.getD 0 := by
-            exact List.le_max?_getD hmem
-          omega
-        sorry
+        specialize g head (by grind)
+        specialize hl head (by grind)
+        unfold abs_two_vars_are_enough at hl
+        split at hl <;> grind
+  | succ i =>
+  have steps := FullBetaEta.steps_app_l_cong (FullBetaEta.steps_app_l_cong steps (LC.fvar "x")) (LC.fvar "y")
+  have steps := steps.trans (FullBetaEta.from_beta _ _ H_succ_reduce)
+  obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) ht) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  sorry
+
 
 /-
   #exit

@@ -5,6 +5,7 @@ import Cslib.Languages.LambdaCalculus.LocallyNameless.Untyped.LcAt
 import FokkerChallenge.EnhancedCslib.BetaNormalForm
 import FokkerChallenge.EnhancedCslib.EtaNormalForm
 import FokkerChallenge.EnhancedCslib.BetaEtaNormalForm
+import FokkerChallenge.EnhancedCslib.GenFinset
 import FokkerChallenge.Basic
 import FokkerChallenge.FamousCombinator
 import Mathlib.Data.Finset.Lattice.Basic
@@ -32,8 +33,8 @@ private theorem gen_term_reduces_to_normal {X} (h: Gen Term_LA0L1 X) : Relation.
                         apply Relation.ReflTransGen.trans
                         . apply FullBetaEta.steps_app_l_cong
                           assumption
-                          apply gen_lc
-                          assumption
+                          apply closedunderapp_lc _ (by assumption)
+                          simp
                           rw [← lcAt_iff_LC]
                           decide
                         . apply Relation.ReflTransGen.trans

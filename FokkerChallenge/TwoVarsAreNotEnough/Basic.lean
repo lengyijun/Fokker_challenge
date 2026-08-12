@@ -134,8 +134,10 @@ theorem subterms_size {t} :
   | app _ _ => grind
   | abs t => cases t with grind
 
+/-
 theorem subterms_gen {t M} (h : Gen t M) : t.subterms = M.subterms := by
   induction h with grind
+-/
 
 theorem subterms_fv {t} (h : t.fv = ∅) :
     ∀ s ∈ subterms t, s.fv = ∅ := by
@@ -180,8 +182,6 @@ theorem subterms_idempotent {t : Term String} : idempotent t.subterms := by
     | fvar _ => grind
     | app _ _ => grind
     | abs t => cases t with grind
-
-def GenFinset (atoms: List (Term String)) := ClosedUnderApp (fun t => t ∈ atoms)
 
 /-
 @[scoped grind]
