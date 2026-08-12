@@ -144,7 +144,7 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
 theorem no_reduction_to_Hn_with_depth_bound {fs}
   (hl : ∀ t ∈ fs, t.abs_two_vars_are_enough) : not_basises fs := by
   refine ⟨H (((fs.map depth).max?).getD 0), H.LC, H_fv, ?_⟩
-  intros t ht steps
+  intros M hm steps
   generalize hi : ((fs.map depth).max?).getD 0 = i
   rw [hi] at steps
   have g : ∀ t ∈ fs, t.depth <= i := by
@@ -154,16 +154,18 @@ theorem no_reduction_to_Hn_with_depth_bound {fs}
     omega
   cases i with
   | zero => cases fs with
-    | nil => clear steps; induction ht <;> grind
+    | nil => clear steps; induction hm <;> grind
     | cons head tail =>
         specialize g head (by grind)
         specialize hl head (by grind)
         unfold abs_two_vars_are_enough at hl
         split at hl <;> grind
-  | succ i =>
+  | succ n =>
   have steps := FullBetaEta.steps_app_l_cong (FullBetaEta.steps_app_l_cong steps (LC.fvar "x")) (LC.fvar "y")
   have steps := steps.trans (FullBetaEta.from_beta _ _ H_succ_reduce)
-  obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) ht) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  obtain ⟨l, i, N, h, steps⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 (by grind) hm) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+  have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+  -- obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (by sorry) ⟨beta_eta_spline_contain_x (by sorry), closedunderapp_multiapp_cons (by grind) (by sorry), closedunderapp_multiapp_cons (by grind) (by sorry)⟩ _ h
   sorry
 
 
