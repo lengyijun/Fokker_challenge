@@ -341,3 +341,15 @@ theorem U_transform (x) {n z M} (h : (U n z z) M) : (U n x z) M := by
 
 theorem app_U_transform (x) {n z M} (h : ClosedUnderApp (U n z z) M) : ClosedUnderApp (U n x z) M := by
   induction h with grind [U_transform]
+
+theorem U0 {x y M} (h : (U 0 x y) M) : (fun t => t.IsFvar \/ t.IsBvar) M := by
+  rcases h with _|_|⟨l, h, hl⟩
+  . grind
+  . grind
+  . cases l with
+  | nil => grind
+  | cons head tail => specialize hl head (by grind)
+                      grind
+
+theorem app_U0 {x y M} (h : ClosedUnderApp (U 0 x y) M) : ClosedUnderApp (fun t => t.IsFvar \/ t.IsBvar) M := by
+  induction h with grind [U0]
