@@ -106,14 +106,20 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
             have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [app_U_fv (by assumption)]) hq
             cases hq with | base hq =>
             rcases hq with _|hq|_ <;> try grind
-            obtain ⟨l, steps, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" 0 (by grind) (by grind) (by grind) hq
+            have g : ClosedUnderApp (U 0 "x" "z") (Z["x" := fvar "z"]["y" := fvar "z"].app (fvar "x")) := by grind
+            obtain ⟨l, steps, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" 0 (by grind) g (by grind) hq
             cases l with
             | cons head tail => specialize hl head (by grind)
                                 grind
             | nil =>  simp at steps
-                      sorry
+                      apply app_U0 at g
+                      apply app_betaeta_nf_bfvar at g
+                      rw [FullBetaEta.normal_fullbeta_iff] at g
+                      have g := Relation.Normal.reflTransGen_eq (by grind) steps
+                      cases g
   | succ n => sorry
 
+/-
 theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
@@ -176,3 +182,4 @@ theorem no_reduction_to_Hn_with_depth_bound {n M}
   obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
   -- h2steps
   sorry
+-/
