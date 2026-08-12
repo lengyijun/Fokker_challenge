@@ -17,7 +17,6 @@ import FokkerChallenge.EnhancedCslib.LeftMost
 import FokkerChallenge.EnhancedCslib.Closedunderapp
 import FokkerChallenge.EnhancedCslib.FlipApp
 import FokkerChallenge.EnhancedCslib.List
--- import FokkerChallenge.EnhancedCslib.Spine
 import FokkerChallenge.EnhancedCslib.HeadRed
 import FokkerChallenge.EnhancedCslib.InternalPar
 import FokkerChallenge.EnhancedCslib.StarSeq
@@ -40,5 +39,5 @@ import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
 import FokkerChallenge.TwoVarsAreNotEnough.Q
 import FokkerChallenge.TwoVarsAreNotEnough.U
-import FokkerChallenge.TwoVarsAreNotEnough.Z
 import FokkerChallenge.TwoVarsAreNotEnough.Final
+import FokkerChallenge.TwoVarsAreNotEnough.Subterms
