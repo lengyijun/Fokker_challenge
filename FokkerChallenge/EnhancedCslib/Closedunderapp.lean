@@ -52,14 +52,18 @@ theorem closedunderapp_fv {Q} {M : Term String}
   induction h2 with grind
 
 
-theorem closedunderapp_derive {P Q} {M : Term String}
-  (h : ∀ x, P x -> Q x)
-  (h2 : ClosedUnderApp P M) :
-        ClosedUnderApp Q M := by
-  induction h2 with grind
+theorem closedunderapp_derive {P Q}
+  (h :  P ≤ Q) :
+  ClosedUnderApp P ≤ ClosedUnderApp Q := by
+  intros M h2
+  induction h2 with
+  | base h2 => exact .base (h _ h2)
+  | app _ _ _ _ => grind
 
-theorem closedunderapp_derive2 {P Q} {M : Term String}
-  (h : ∀ x, P x -> ClosedUnderApp Q x)
-  (h2 : ClosedUnderApp P M) :
-        ClosedUnderApp Q M := by
-  induction h2 with grind
+theorem closedunderapp_derive2 {P Q}
+  (h : P ≤ ClosedUnderApp Q) :
+  ClosedUnderApp P ≤ ClosedUnderApp Q := by
+  intros M h2
+  induction h2 with
+  | base h2 => exact h _ h2
+  | app _ _ _ _ => grind
