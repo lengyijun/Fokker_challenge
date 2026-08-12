@@ -140,11 +140,32 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
       right
       grind
 
-theorem no_reduction_to_Hn_with_depth_bound {n M}
-  (h_depth : M.depth <= n)
-  (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
-  (steps : ((M.app (fvar "x")).app (fvar "y")) ↠βηᶠ (fvar "x").app ((fvar "y").app (H n))) : False := by
-  induction n using Nat.strong_induction_on generalizing M with | h n ih =>
+theorem no_reduction_to_Hn_with_depth_bound {fs M}
+  (hl : ∀ t ∈ fs, t.abs_two_vars_are_enough)
+  (hm : GenFinset fs M) : not_basis M := by
+  refine ⟨H (((fs.map depth).max?).getD 0), H.LC, H_fv, ?_⟩
+  intros t ht steps
+  generalize hi : ((fs.map depth).max?).getD 0 = i
+  rw [hi] at steps
+  cases i with
+  | succ n => sorry
+  | zero => cases fs with
+    | nil => clear ht; induction hm <;> grind
+    | cons head tail =>
+        have : ∀ t ∈ head :: tail, t.depth <= 0 := by
+          intro t ht
+          by_contra h
+          have hpos : 0 < t.depth := Nat.lt_of_not_ge h
+          have hmem : t.depth ∈ List.map depth (head :: tail) := by
+            exact List.mem_map.2 ⟨t, ht, rfl⟩
+          have hmax : t.depth ≤ (List.map depth (head :: tail)).max?.getD 0 := by
+            exact List.le_max?_getD hmem
+          omega
+        sorry
+
+/-
+  #exit
+
   have h_betaeta_nf : Relation.Normal FullBetaEta ((fvar "x").app ((fvar "y").app (H n))) := by
     rw [exists_beta_normal_fvar_app_of_beta_eta, exists_beta_normal_fvar_app_of_beta_eta]
     apply normal_H
@@ -202,3 +223,5 @@ theorem no_reduction_to_Hn_with_depth_bound {n M}
   obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
   -- h2steps
   sorry
+
+-/

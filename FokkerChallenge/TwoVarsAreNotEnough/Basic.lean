@@ -181,6 +181,9 @@ theorem subterms_idempotent {t : Term String} : idempotent t.subterms := by
     | app _ _ => grind
     | abs t => cases t with grind
 
+def GenFinset (atoms: List (Term String)) := ClosedUnderApp (fun t => t ∈ atoms)
+
+/-
 @[scoped grind]
 inductive GenFinset (atoms: Finset (Term String)) : Term String → Prop where
   | base : ∀ atom ∈ atoms, GenFinset atoms atom
@@ -240,6 +243,7 @@ theorem genFinset_list (fs : Finset (Term String))
   (ht: GenFinset fs f)
   (hl : ∀ x ∈ l, GenFinset fs x) : GenFinset fs (l.foldl Term.app f) := by
   induction l generalizing f with grind
+-/
 
 
 axiom BetaAt.step_fv {M N: Term String} {i} : BetaAt i M N -> N.fv ⊆ M.fv
