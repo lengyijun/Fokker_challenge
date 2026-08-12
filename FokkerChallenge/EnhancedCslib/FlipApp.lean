@@ -160,3 +160,11 @@ theorem redex_n_apps_n_abs_of_apps (y : String) (M n)
     refine .trans (ih _ ?_) .refl
     rw [<- lcAt_iff_LC, absn_lcat] at *
     grind
+
+theorem multiapp_subst {M N : Term String} {l} {z : String} :
+  (List.foldl (flip app) M l)[z := N] =
+  (List.foldl (flip app) M[z := N] (l.map (fun x => x[z := N]))) := by
+  induction l generalizing M with
+  | nil => grind
+  | cons head tail ih =>  simp [flip]
+                          grind

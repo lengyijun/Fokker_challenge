@@ -273,3 +273,44 @@ theorem U_foldl_x {Z l n x z}
                 subst_vars
                 obtain ⟨_, _⟩ := hl (List.foldl app ((fvar x).app Z) l) (by grind)
                 induction l  using List.reverseRecOn with grind
+
+theorem U_subst_x {n x z y M} (h : (U n x z) M) (hxz : x ≠ z) :
+  (U n y z) M[x:=fvar y] := by
+  rcases h with _|_|⟨l, h, _⟩
+  . grind
+  . rw [subst_fresh] <;> grind
+  . right
+    right
+    refine ⟨l, ?_, by grind⟩
+    subst M
+    rw [subst_fresh]; try grind
+    rw [flip_app_fv]
+    have h5 : ∀ x ∈ l, x.fv = ∅ := by grind
+    rw [<- List.map_eq_replicate_iff] at h5
+    rw [h5, foldl_union_replicate_empty]
+    grind
+
+theorem U_subst_x_closedunderapp (y) {n x z M} (hxz : x ≠ z) (h : ClosedUnderApp (U n x z) M):
+  ClosedUnderApp (U n y z) M[x:=fvar y] := by
+  induction h with grind [U_subst_x]
+
+theorem U_subst_z {n x z y M} (h : (U n x z) M) (hxz : x ≠ z) :
+  (U n x y) M[z:=fvar y] := by
+  rcases h with _|_|⟨l, h, _⟩
+  . grind
+  . rw [subst_fresh] <;> grind
+  . right
+    right
+    refine ⟨l, ?_, by grind⟩
+    subst M
+    rw [multiapp_subst, subst_fvar]
+    split <;> try grind
+    apply congr rfl
+    induction l with
+    | nil => grind
+    | cons head tail ih =>  simp
+                            rw [subst_fresh] <;> grind
+
+theorem U_subst_z_closedunderapp (y) {n x z M} (hxz : x ≠ z) (h : ClosedUnderApp (U n x z) M):
+  ClosedUnderApp (U n x y) M[z:=fvar y] := by
+  induction h with grind [U_subst_z]
