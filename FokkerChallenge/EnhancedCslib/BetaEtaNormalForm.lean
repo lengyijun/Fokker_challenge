@@ -71,6 +71,14 @@ theorem exists_beta_normal_fvar_app_of_beta_eta {Y: Term String} {x} :
     . rename_i g _
       cases g with | base g => cases g
 
+theorem betaeta_nf_fvar {x : String} :
+  Relation.Normal FullBetaEta (fvar x) := by
+  rintro ⟨y, h⟩
+  cases h with
+  | inl h => cases h with | base h => cases h
+  | inr h => cases h with | base h => cases h
+
+
 theorem beta_eta_star_of_beta_normal {M N : Term String} (h : Relation.Normal FullBeta M) (steps : M ↠βηᶠ N) :
     M ↠ηᶠ N := by
   induction steps using Relation.ReflTransGen.head_induction_on with
