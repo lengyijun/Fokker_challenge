@@ -33,6 +33,8 @@ def H : Nat -> Term String
 | 0 => ((bvar 1).app ((bvar 0).app (bvar 0))).abs.abs
 | .succ n => ((bvar 1).app ((bvar 0).app (H n))).abs.abs
 
+theorem H_fv {n} : (H n).fv = ∅ := by induction n with grind
+
 @[simp, scoped grind]
 theorem H.LC {n} : (H n).LC := by
   rw [<- lcAt_iff_LC]
@@ -80,4 +82,20 @@ theorem H_succ_reduce {n} : ((H (n + 1)).app (fvar "x")).app (fvar "y") ↠βᶠ
     grind
     grind [H.LC]
 
-theorem H_fv {n} : (H n).fv = ∅ := by induction n with grind
+theorem H_0_reduce : ((H 0).app (fvar "x")).app (fvar "y") ↠βᶠ ((fvar "x").app ((fvar "y").app (fvar "y"))) := by
+    apply Relation.ReflTransGen.head
+    apply Xi.appR
+    grind
+    apply Xi.base
+    apply Beta.beta
+    rw [<- lcAt_iff_LC]
+    decide
+    grind
+    refine .head ((Xi.base (.beta ?_ (by grind)))) ?_
+    unfold openRec openRec openRec
+    split <;> try grind
+    split <;> try grind
+    rw [<- lcAt_iff_LC]
+    decide
+    unfold openRec openRec openRec
+    split <;> grind
