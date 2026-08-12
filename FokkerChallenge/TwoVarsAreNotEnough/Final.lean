@@ -96,12 +96,22 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
   have hz := U_subst_x_closedunderapp "z" (by grind) (U_subst_z_closedunderapp "z" (by grind) hz)
   cases n with
   | zero => have steps := steps.trans (FullBetaEta.from_beta _ _ H_0_reduce)
-            obtain ⟨l, i, _, h2steps, _⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
+            obtain ⟨l, i, _, h2steps, hw⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply betaeta_nf_fvar) steps
             have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
             have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (fvar "y"))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (fvar "y")) :: List.replicate i (fvar "y"))) := by grind
             rw [heq] at g
             obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := Z["x" := fvar "z"]["y" := fvar "z"]) (closedunderapp_derive2 U_le_fvar_or_combinator hz) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator (by assumption)) (by grind)) (by grind))⟩ _ h2steps
-            sorry
+            apply FullBetaEta.steps_fv at hw
+            apply (app_U_transform "x") at hz
+            have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [app_U_fv (by assumption)]) hq
+            cases hq with | base hq =>
+            rcases hq with _|hq|_ <;> try grind
+            obtain ⟨l, steps, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" 0 (by grind) (by grind) (by grind) hq
+            cases l with
+            | cons head tail => specialize hl head (by grind)
+                                grind
+            | nil =>  simp at steps
+                      sorry
   | succ n => sorry
 
 theorem no_reduction_to_Hn_with_depth_bound {n M}
