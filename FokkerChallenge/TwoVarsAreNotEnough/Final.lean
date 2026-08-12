@@ -117,9 +117,29 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
                       rw [FullBetaEta.normal_fullbeta_iff] at g
                       have g := Relation.Normal.reflTransGen_eq (by grind) steps
                       cases g
-  | succ n => sorry
+  | succ n =>
+      have steps := steps.trans (FullBetaEta.from_beta _ _ H_succ_reduce)
+      obtain ⟨l, i, _, h2steps, hw⟩ := exists_head_reduction_to_fvar_app (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator hz) (by grind)) (by grind)) (by rw [exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) steps
+      have g := steps_multiApp_l_union (Ns := List.replicate i (fvar "y")) steps (by grind)
+      have heq : (List.foldl app ((fvar "x").app ((fvar "y").app (H n))) (List.replicate i (fvar "y"))) = (List.foldl app (fvar "x") ( ((fvar "y").app (H n)) :: List.replicate i (fvar "y"))) := by grind
+      rw [heq] at g
+      obtain ⟨_, hq, _⟩ := steps_closedUnderApp_unroll_q (M := Z["x" := fvar "z"]["y" := fvar "z"]) (closedunderapp_derive2 U_le_fvar_or_combinator hz) ⟨beta_eta_spline_contain_x g, closedunderapp_multiapp_cons (by grind) (by grind), closedunderapp_multiapp_cons (by grind) (.app (.app (closedunderapp_derive2 U_le_fvar_or_combinator (by assumption)) (by grind)) (by grind))⟩ _ h2steps
+      apply FullBetaEta.steps_fv at hw
+      apply (app_U_transform "x") at hz
+      have hq := closedUnderApp_q_of_foldl_app "y" (by grind) (by grind [app_U_fv (by assumption)]) hq
+      cases hq with | base hq =>
+      rcases hq with _|hq|_ <;> try grind
+      have g : ClosedUnderApp (U (n+1) "x" "z") (Z["x" := fvar "z"]["y" := fvar "z"].app (fvar "x")) := by grind
+      obtain ⟨l, g, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" (n+1) (by grind) g (by grind) hq
+      have g := FullBeta.redex_app_l_cong g (LC.fvar "y")
+      obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta _ _ g)
+      have := Relation.Normal.reflTransGen_eq (by rw [exists_beta_normal_fvar_app_of_beta_eta, exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) hz1
+      subst Z
+      apply ih n (by grind) (.app (.base ?_) (by grind)) hz2
+      right
+      right
+      grind
 
-/-
 theorem no_reduction_to_Hn_with_depth_bound {n M}
   (h_depth : M.depth <= n)
   (hm : ClosedUnderApp (fun t => t.abs_two_vars_are_enough) M)
@@ -182,4 +202,3 @@ theorem no_reduction_to_Hn_with_depth_bound {n M}
   obtain ⟨l, hx, _⟩:= unroll_2_vars_are_enough_foldl (by grind) hq
   -- h2steps
   sorry
--/
