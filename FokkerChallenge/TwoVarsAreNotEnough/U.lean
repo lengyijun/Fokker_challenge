@@ -325,11 +325,12 @@ theorem U_fv {n x z M}  (h : U n x z M): M.fv ⊆ {x, z} := by
     rw [h5, foldl_union_replicate_empty]
     grind
 
-theorem app_U_fv {n x z M}  (h : ClosedUnderApp (U n x z) M):
+theorem app_U_fv {n x z M} (h : ClosedUnderApp (U n x z) M):
    M.fv ⊆ {x, z} := by
    induction h with grind [U_fv]
 
-theorem U_transform (x) {n z M} (h : (U n z z) M) : (U n x z) M := by
+theorem U_transform (x) {n z} : U n z z ≤ U n x z := by
+  intros M h
   rcases h with _|_|⟨l, h, _⟩
   . right
     right
@@ -338,10 +339,14 @@ theorem U_transform (x) {n z M} (h : (U n z z) M) : (U n x z) M := by
   . grind
   . grind
 
-theorem app_U_transform (x) {n z M} (h : ClosedUnderApp (U n z z) M) : ClosedUnderApp (U n x z) M := by
-  induction h with grind [U_transform]
+theorem app_U_transform (x) {n z} : ClosedUnderApp (U n z z) ≤ ClosedUnderApp (U n x z) := by
+  intros M h
+  induction h with
+  | base h => exact .base (U_transform _ _ h)
+  | app _ _ _ _ => grind
 
-theorem U0 {x y M} (h : (U 0 x y) M) : (fun t => t.IsFvar \/ t.IsBvar) M := by
+theorem U0 {x y} : U 0 x y ≤ (fun t => t.IsFvar \/ t.IsBvar) := by
+  intros M h
   rcases h with _|_|⟨l, h, hl⟩
   . grind
   . grind
@@ -350,5 +355,8 @@ theorem U0 {x y M} (h : (U 0 x y) M) : (fun t => t.IsFvar \/ t.IsBvar) M := by
     | cons head tail => specialize hl head (by grind)
                         grind
 
-theorem app_U0 {x y M} (h : ClosedUnderApp (U 0 x y) M) : ClosedUnderApp (fun t => t.IsFvar \/ t.IsBvar) M := by
-  induction h with grind [U0]
+theorem app_U0 {x y} : ClosedUnderApp (U 0 x y) ≤ ClosedUnderApp (fun t => t.IsFvar \/ t.IsBvar) := by
+  intros M h
+  induction h with
+  | base h => exact .base (U0 _ h)
+  | app _ _ _ _ => grind
