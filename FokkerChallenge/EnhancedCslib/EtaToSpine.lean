@@ -236,7 +236,7 @@ theorem abs_escape {T U : Term Var} (h : (abs T) ↠ηᶠ U)
           refine ⟨W, ys ∪ xs, hW, hWU, ?_⟩
           intro y hy
           simp only [Finset.mem_union, not_or] at hy
-          exact (Relation.ReflTransGen.single (hs y hy.2)).trans (hopen y hy.1)
+          exact .head (hs y hy.2) (hopen y hy.1)
   exact key h T rfl
 
 /-! ## The main result -/

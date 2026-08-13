@@ -459,7 +459,7 @@ theorem leftmost_rtc_cases {M N}
   | inl => grind
   | inr ih => left
               obtain ⟨Q, hmq, hqb⟩ := ih
-              refine .trans (by assumption) (.single ?_)
+              refine .tail (by assumption) ?_
               specialize h _ hmq
               have h3 := spine_def_2 Q
               generalize hq : Q.spine.2 = l

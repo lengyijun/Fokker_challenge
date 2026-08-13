@@ -99,7 +99,7 @@ theorem closedUnderApp_unroll {M}
         refine closedunderapp_multiapp_cons (by grind) (.base ?_)
         right
         left
-        exact .trans h4 (.single (.reflTrans (by grind)))
+        exact .tail h4 (.reflTrans (by grind))
       . subst_vars
         apply closedunderapp_multiapp_cons (by grind)
         cases unroll_fvar_or_combinator (by grind) h4 with
@@ -202,7 +202,7 @@ theorem step_closedUnderApp_unroll_q {M N}
           refine closedunderapp_multiapp_cons (by grind) (.base ?_)
           right
           left
-          exact .trans h4 (.single (.reflTrans (by grind)))
+          exact .tail h4 (.reflTrans (by grind))
         . subst_vars
           apply closedunderapp_multiapp_cons (by grind)
           cases unroll_fvar_or_combinator (by grind) h4 with
@@ -218,7 +218,7 @@ theorem step_closedUnderApp_unroll_q {M N}
                         have h7 : (M.app (fvar "x")).Q a := by
                           right
                           left
-                          refine .trans h4 (.single (.throughAbsApp))
+                          refine .tail h4 .throughAbsApp
                         apply closed_under_app_Q h
                         . have := unroll.depth (by grind) h4
                           simp_all
