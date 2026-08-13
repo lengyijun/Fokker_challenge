@@ -183,7 +183,7 @@ theorem closedUnderApp_reduce_to_H_false (x z n) {M N}
                     have : x ∈ ({z} : Finset String) := by grind
                     grind
 
-theorem U_le_fvar_or_combinator{i y z} : ∀ x, U i y z x -> ClosedUnderApp fvar_or_combinator x := by
+theorem U_le_fvar_or_combinator{i y z} : U i y z ≤ ClosedUnderApp fvar_or_combinator := by
   intro x hx
   rcases hx with _|_|⟨l, h, _⟩
   . grind
