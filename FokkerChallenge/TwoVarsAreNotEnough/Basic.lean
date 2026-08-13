@@ -330,7 +330,7 @@ theorem P_fv(fs : Finset (Term String))
   grind
 
 
-theorem closedUnderApp_reduce_to_H_false {M n}
+theorem closedUnderApp_reduce_to_head_apps {M n}
   (hdepth : M.depth = n)
   (hm : ClosedUnderApp fvar_or_combinator M)
   (h : M ↠βᶠ H n) : False:= by

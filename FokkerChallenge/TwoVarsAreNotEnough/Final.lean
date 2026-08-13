@@ -107,7 +107,7 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
             cases hq with | base hq =>
             rcases hq with _|hq|_ <;> try grind
             have g : ClosedUnderApp (U 0 "x" "z") (Z["x" := fvar "z"]["y" := fvar "z"].app (fvar "x")) := by grind
-            obtain ⟨l, steps, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" 0 (by grind) g (by grind) hq
+            obtain ⟨l, steps, hl⟩ := closedUnderApp_reduce_to_head_apps "x" "z" 0 (by grind) g (by grind) hq
             cases l with
             | cons head tail => specialize hl head (by grind)
                                 grind
@@ -130,7 +130,7 @@ theorem no_reduction_to_Hn_with_depth_bound_U {n M}
       cases hq with | base hq =>
       rcases hq with _|hq|_ <;> try grind
       have g : ClosedUnderApp (U (n+1) "x" "z") (Z["x" := fvar "z"]["y" := fvar "z"].app (fvar "x")) := by grind
-      obtain ⟨l, g, hl⟩ := closedUnderApp_reduce_to_H_false "x" "z" (n+1) (by grind) g (by grind) hq
+      obtain ⟨l, g, hl⟩ := closedUnderApp_reduce_to_head_apps "x" "z" (n+1) (by grind) g (by grind) hq
       have g := FullBeta.redex_app_l_cong g (LC.fvar "y")
       obtain ⟨Z, hz1, hz2⟩ := confluent_beta_eta steps (FullBetaEta.from_beta _ _ g)
       have := Relation.Normal.reflTransGen_eq (by rw [exists_beta_normal_fvar_app_of_beta_eta, exists_beta_normal_fvar_app_of_beta_eta]; apply normal_H) hz1
