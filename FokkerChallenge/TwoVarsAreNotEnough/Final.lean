@@ -24,6 +24,7 @@ import FokkerChallenge.TwoVarsAreNotEnough.Head2
 import FokkerChallenge.TwoVarsAreNotEnough.Unroll
 import FokkerChallenge.TwoVarsAreNotEnough.Q
 import FokkerChallenge.TwoVarsAreNotEnough.U
+import FokkerChallenge.TwoVarsAreNotEnough.Subterms
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -172,3 +173,11 @@ theorem no_reduction_to_Hn_with_depth_bound (fs)
   apply genfinset_depth at hm
   rw [hi] at *
   grind
+
+theorem no_reduction_to_Hn_with_depth_bound_closedunderapp (fs)
+  (hl : ∀ t ∈ fs, ClosedUnderAppBool abs_two_vars_are_enough t) : not_basises fs := by
+  obtain ⟨M, hlc, hfv, h⟩ := no_reduction_to_Hn_with_depth_bound (fs.flatMap subterms) (by grind [subterms_closedunderappbool])
+  refine ⟨M, hlc, hfv, ?_⟩
+  intros t _ steps
+  apply h t ?_ steps
+  sorry

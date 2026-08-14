@@ -68,7 +68,7 @@ theorem closedunderapp_derive2 {P Q}
   | base h2 => exact h _ h2
   | app _ _ _ _ => grind
 
-@[scoped grind]
-def closedUnderAppBool (P : Term String → Bool) : Term String → Bool
-  | .app a b => closedUnderAppBool P a && closedUnderAppBool P b
+@[simp, scoped grind]
+def ClosedUnderAppBool (P : Term String → Bool) : Term String → Bool
+  | .app a b => ClosedUnderAppBool P a && ClosedUnderAppBool P b
   | a        => P a
