@@ -19,7 +19,7 @@ theorem Leftmost.induction_rule
     (h : Leftmost M M')
     (hi : ¬ IsAbs M),
     motive h →
-    @motive (M.app N) _ (by simpa [Leftmost, hi] using (BetaAt.appL h)))
+    @motive (M.app N) (M'.app N) (by simpa [Leftmost, hi] using (BetaAt.appL h)))
       (h_appR :
   ∀  {M M' N : Term String}
     (h : Leftmost M M')
