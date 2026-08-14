@@ -178,6 +178,12 @@ theorem no_reduction_to_Hn_with_depth_bound_closedunderapp (fs)
   (hl : ∀ t ∈ fs, ClosedUnderAppBool abs_two_vars_are_enough t) : not_basises fs := by
   obtain ⟨M, hlc, hfv, h⟩ := no_reduction_to_Hn_with_depth_bound (fs.flatMap subterms) (by grind [subterms_closedunderappbool])
   refine ⟨M, hlc, hfv, ?_⟩
-  intros t _ steps
+  intros t g steps
   apply h t ?_ steps
-  sorry
+  clear steps h hlc hfv
+  induction g with
+  | app _ _ _ _ => grind
+  | base g => specialize hl _ g
+              apply closedUnderAppBool_genfinset_subterms at hl
+              apply genfinset_subset ?_ hl
+              grind

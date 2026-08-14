@@ -8,10 +8,10 @@ namespace LambdaCalculus.LocallyNameless.Untyped.Term
 
 @[simp, scoped grind =]
 def subterms : Term String -> List (Term String)
-  | Term.bvar _ => ∅
-  | Term.fvar _ => ∅
+  | Term.bvar _ => []
+  | Term.fvar _ => []
   | Term.abs (Term.abs t) => t.abs.abs :: (subterms t)
-  | Term.abs _ => ∅
+  | Term.abs _ => []
   | Term.app t1 t2 => subterms t1 ∪ subterms t2
 
 theorem subterms_subset {t : Term String} :
@@ -73,18 +73,17 @@ theorem subterms_closedunderappbool {t} (h : ClosedUnderAppBool abs_two_vars_are
       | abs t => cases t with (simp_all; try subst_vars)
         | abs _ => grind
 
-theorem closedUnderAppBool_genfinset_subterms {t} (h : ClosedUnderAppBool abs_two_vars_are_enough t) :
+theorem closedUnderAppBool_genfinset_subterms {t}
+    (h : ClosedUnderAppBool abs_two_vars_are_enough t) :
     GenFinset t.subterms t := by
-    induction ht : t.fokker_size using Nat.strong_induction_on generalizing t with | h n ih =>
-    cases t with
-    | bvar _ => cases h
-    | fvar _ => cases h
-    | abs t => cases t <;> grind
-    | app x y =>  have := @ih x.fokker_size (by grind) x (by grind) rfl
-                  have := @ih y.fokker_size (by grind) y (by grind) rfl
-                  refine .app ?_ ?_
-                  . grind [genfinset_concat_l, genfinset_concat_r]
-                  . grind [genfinset_concat_l, genfinset_concat_r]
+  induction ht : t.fokker_size using Nat.strong_induction_on generalizing t with | h n ih =>
+  cases t with
+  | bvar _ => cases h
+  | fvar _ => cases h
+  | abs t => cases t <;> grind
+  | app x y =>  have hx := @ih x.fokker_size (by grind) x (by grind) rfl
+                have hy := @ih y.fokker_size (by grind) y (by grind) rfl
+                refine .app (genfinset_subset (by grind) hx) (genfinset_subset (by grind) hy)
 
 /-
 @[scoped grind =]

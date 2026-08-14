@@ -30,10 +30,6 @@ theorem genfinset_depth {fs M} (h : GenFinset fs M) :
                 omega
   | app _ _ _ _ => unfold depth; omega
 
-theorem genfinset_concat_l {l1 l2 M} (h : GenFinset l1 M) :
-  GenFinset (l1 ∪ l2) M := by
-  induction h <;> grind
-
-theorem genfinset_concat_r {l1 l2 M} (h : GenFinset l2 M) :
-  GenFinset (l1 ∪ l2) M := by
+theorem genfinset_subset {l1 l2 M} (hsubset : l1 ⊆ l2) (h : GenFinset l1 M) :
+  GenFinset l2 M := by
   induction h <;> grind
