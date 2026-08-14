@@ -67,3 +67,8 @@ theorem closedunderapp_derive2 {P Q}
   induction h2 with
   | base h2 => exact h _ h2
   | app _ _ _ _ => grind
+
+@[scoped grind]
+def closedUnderAppBool (P : Term String → Bool) : Term String → Bool
+  | .app a b => closedUnderAppBool P a && closedUnderAppBool P b
+  | a        => P a
