@@ -191,4 +191,17 @@ theorem no_reduction_to_Hn_with_depth_bound_closedunderapp (fs)
 
 theorem isNamedOfXY_not_basis (fs)
   (hl : ∀ t ∈ fs, isNamedOfXY t) : not_basises fs := by
-  sorry
+  have h : ∃ l : List _, List.Forall₂ (Relation.ReflTransGen FullBeta) l fs /\
+                         ∀ t ∈ l, ClosedUnderAppBool abs_two_vars_are_enough t := by
+    induction fs with
+    | nil => exact ⟨[], by simp, by grind⟩
+    | cons head tail ih =>
+        obtain ⟨l, _, _⟩ := ih (by grind)
+        obtain ⟨s, _, _⟩ := exists_block_combination_betaStar head (by grind)
+        refine ⟨s :: l, .cons (by assumption) (by assumption), by grind⟩
+  obtain ⟨l, hl, _⟩ := h
+  obtain ⟨y, hlc, hfv, h⟩ := no_reduction_to_Hn_with_depth_bound_closedunderapp l (by grind)
+  refine ⟨y, hlc, hfv, ?_⟩
+  intros t ht steps
+  obtain ⟨M, h1, h2⟩ := genfinset_forall2 hl (by grind) _ ht
+  exact h M h1 (.trans (FullBetaEta.from_beta _ _ h2) steps)

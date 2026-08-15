@@ -396,8 +396,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
         have h2 : ((Term.fvar q)[q:=B])[p:=A] = B := by
           have hqq : (Term.fvar q)[q:=B] = B := by grind
           rw [hqq]
-          apply Term.subst_fresh
-          apply (hBx.notMem hp)
+          apply Term.subst_fresh _ _ _ (hBx.notMem hp)
         rw [h1, h2]
   | app a b iha ihb =>
       intro p q hpq hp hq hwn
@@ -484,9 +483,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
             cases (@subst_preserve_not_fvar _ _ p (NTerm.toLN [] c) (Term.fvar f))
             . grind
             . grind
-            . rename_i h1 h2
-              rw [h1, h2] at hcc
-              grind
+            . grind
             . rename_i h1 h2
               rw [h1, h2] at hcc
               simp at hcc
@@ -502,9 +499,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
               _ = (((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B])[p:=A] := by
                     have := toLN_openRec_subst (V := Term.fvar f) c (ctx := []) (z := p) (by simp)
                     grind
-              _ = ((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B] := by
-                    apply Term.subst_fresh
-                    grind
+              _ = ((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B] := Term.subst_fresh _ _ _ hpnot
           rw [hRHS]
           grind
       · -- the binder is named `q`; the block's parameters are `(p, q)`
@@ -572,7 +567,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
 β-reduct of an application combination of binary blocks. -/
 theorem exists_block_combination_betaStar (t : Term String) (h : isNamedOfXY t = true) :
     ∃ s : Term String,
-      ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧ s ↠βᶠ t := by
+      ClosedUnderAppBool abs_two_vars_are_enough s ∧ s ↠βᶠ t := by
   obtain ⟨u, hwn, rfl⟩ := exists_named_of_isNamedOfXY h
   have hwn2 : NTerm.WN ["x", "y"] u := WN_mono u (by simp) hwn
   obtain ⟨E, hE, hLE, hR⟩ :=
@@ -581,7 +576,8 @@ theorem exists_block_combination_betaStar (t : Term String) (h : isNamedOfXY t =
     (Term.abs (Term.abs (Term.bvar 1))), ?_, ?_⟩
   · have hK : abs_two_vars_are_enough (Term.abs (Term.abs (Term.bvar 1))) = true := by decide
     have hG : abs_two_vars_are_enough (Term.abs (Term.abs E)) = true := hE
-    exact ClosedUnderApp.app (ClosedUnderApp.app (.base hG) (.base hK)) (.base hK)
+    unfold ClosedUnderAppBool
+    grind
   · have hKlc : LC (Term.abs (Term.abs (Term.bvar 1)) : Term String) := lc_block_bvar1
     have hKav : AvoidXY (Term.abs (Term.abs (Term.bvar 1)) : Term String) := by
       constructor <;> simp [Term.fv]
@@ -627,7 +623,7 @@ example : isNamedOfXY (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0))
 /-- Hence the main theorem applies to it: it is the β-reduct of a combination of
 binary blocks. -/
 example : ∃ s : Term String,
-    ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧
+    ClosedUnderAppBool abs_two_vars_are_enough s ∧
     s ↠βᶠ (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0)))) :=
   exists_block_combination_betaStar _ (by decide)
 

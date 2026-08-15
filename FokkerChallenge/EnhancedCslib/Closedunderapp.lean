@@ -72,3 +72,8 @@ theorem closedunderapp_derive2 {P Q}
 def ClosedUnderAppBool (P : Term String → Bool) : Term String → Bool
   | .app a b => ClosedUnderAppBool P a && ClosedUnderAppBool P b
   | a        => P a
+
+@[scoped grind]
+theorem closedunderappbool_lc {Q} {M : Term String}
+  (h : ∀ x, Q x -> x.LC)
+  (h2 : ClosedUnderAppBool Q M) : M.LC := by induction M <;> grind
