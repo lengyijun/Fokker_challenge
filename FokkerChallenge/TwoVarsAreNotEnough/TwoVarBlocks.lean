@@ -157,27 +157,30 @@ theorem toLN_append_self {z : String} : ∀ (c : NTerm) {ctx : List String}, z �
 
 theorem subst_toLN_mem {z : String} {V : Term String} :
     ∀ (c : NTerm) {ctx : List String}, z ∈ ctx →
-      Term.subst z V (NTerm.toLN ctx c) = NTerm.toLN ctx c := by
+      (NTerm.toLN ctx c)[z:=V] = NTerm.toLN ctx c := by
   intro c
   induction c with
   | var v =>
       intro ctx hz
       simp only [NTerm.toLN]
       cases hv : NTerm.idx v ctx with
-      | some i => simp [Term.subst]
+      | some i => split <;> grind
       | none =>
+          split <;> try grind
           have hne : v ≠ z := by
             rintro rfl
             have := idx_isSome_of_mem hz
             rw [hv] at this
             simp at this
-          simp [Term.subst, hne]
+          grind
   | lam w b ih =>
       intro ctx hz
       simp only [NTerm.toLN, Term.subst, ih (List.mem_cons_of_mem w hz)]
+      grind
   | app a b iha ihb =>
       intro ctx hz
       simp only [NTerm.toLN, Term.subst, iha hz, ihb hz]
+      grind
 
 theorem openRec_toLN_ge {V : Term String} :
     ∀ (c : NTerm) {ctx : List String} {k : ℕ}, ctx.length ≤ k →
@@ -366,8 +369,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
     (p = "x" ∨ p = "y") → (q = "x" ∨ q = "y") → NTerm.WN [p, q] u →
     ∃ E : Term String, two_vars_are_enough E = true ∧ LC (Term.abs (Term.abs E)) ∧
       ∀ A B : Term String, LC A → LC B → AvoidXY A → AvoidXY B →
-        FullBetaStar (Term.openRec 0 B (Term.openRec 1 A E))
-          (Term.subst p A (Term.subst q B (NTerm.toLN [] u))) := by
+(Term.openRec 0 B (Term.openRec 1 A E)) ↠βᶠ (Term.subst p A (Term.subst q B (NTerm.toLN [] u))) := by
   intro u
   induction u with
   | var v =>
@@ -562,7 +564,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
 β-reduct of an application combination of binary blocks. -/
 theorem exists_block_combination_betaStar {t : Term String} (h : isNamedOfXY t = true) :
     ∃ s : Term String,
-      ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧ FullBetaStar s t := by
+      ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧ s ↠βᶠ t := by
   obtain ⟨u, hwn, rfl⟩ := exists_named_of_isNamedOfXY h
   have hwn2 : NTerm.WN ["x", "y"] u := WN_mono u (by simp) hwn
   obtain ⟨E, hE, hLE, hR⟩ :=
@@ -616,7 +618,7 @@ example : isNamedOfXY (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0))
 binary blocks. -/
 example : ∃ s : Term String,
     ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧
-      FullBetaStar s (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0)))) :=
+    s ↠βᶠ (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0)))) :=
   exists_block_combination_betaStar (by decide)
 
 /-- `λa. λb. λc. a b` genuinely needs three names and is rejected. -/
