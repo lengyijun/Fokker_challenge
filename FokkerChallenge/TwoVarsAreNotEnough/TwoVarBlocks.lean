@@ -392,10 +392,11 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
         rw [htv, h]
         have h1 : Term.openRec 0 B (Term.openRec 1 A (Term.bvar 0)) = B := by
           simp [Term.openRec]
-        have h2 : Term.subst p A (Term.subst q B (Term.fvar q)) = B := by
-          have hqq : Term.subst q B (Term.fvar q) = B := by simp [Term.subst]
+        have h2 : ((Term.fvar q)[q:=B])[p:=A] = B := by
+          have hqq : (Term.fvar q)[q:=B] = B := by grind
           rw [hqq]
-          exact Term.subst_fresh (hBx.notMem hp)
+          apply Term.subst_fresh
+          apply (hBx.notMem hp)
         rw [h1, h2]
   | app a b iha ihb =>
       intro p q hpq hp hq hwn
@@ -412,8 +413,10 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
         have h1 := hRa A B hA hB hAx hBx
         have h2 := hRb A B hA hB hAx hBx
         have lcXb := lc_abs2_open hLb hA hB
-        have lcYa := FullBetaStar.lc_right (lc_abs2_open hLa hA hB) h1
-        exact (FullBetaStar.appR lcXb h1).trans (FullBetaStar.appL lcYa h2)
+        refine (FullBeta.redex_app_l_cong h1 lcXb).trans (FullBeta.redex_app_r_cong h2 ?_)
+        cases FullBeta.steps_lc_or_rfl h1 with
+        | inl h => grind
+        | inr h => grind [lc_abs2_open hLa hA hB]
   | lam z c ih =>
       intro p q hpq hp hq hwn
       obtain ⟨hz, hwnc⟩ := hwn
@@ -456,12 +459,13 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
           have hstep : FullBeta (Term.app (Term.abs (Term.abs Ec)) B)
               (Term.abs (Term.openRec 1 B Ec)) := by
             have := Xi.base (Beta.beta (M := Term.abs Ec) (N := B) hLc hB)
-            simpa [Term.hpow_def, Term.openRec] using this
+            grind
           refine Relation.ReflTransGen.head hstep ?_
-          have htarget : Term.subst p A (Term.subst q B (NTerm.toLN [] (NTerm.lam z c)))
-              = Term.abs (Term.subst p A (Term.subst q B (NTerm.toLN [p] c))) := by
+          have htarget : ((NTerm.toLN [] (NTerm.lam z c))[q:=B])[p:=A]
+              = Term.abs (((NTerm.toLN [p] c)[q:=B])[p:=A]) := by
             rw [hzp]
             simp [NTerm.toLN, Term.subst]
+            grind
           rw [htarget]
           refine FullBetaStar.abs ({"x", "y"} : Finset String) ?_
           intro f hf
@@ -517,7 +521,8 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
               (Term.openRec 1 A (Term.app (Term.abs (Term.abs Ec)) (Term.bvar 1)))
               = Term.app (Term.abs (Term.abs Ec)) A := by
             rw [openRec_app_block hLc, openRec_app_block hLc]
-            simp [Term.openRec, Term.openRec_lc hA]
+            simp [Term.openRec, open_lc]
+            grind
           rw [hopen]
           have hstep : FullBeta (Term.app (Term.abs (Term.abs Ec)) A)
               (Term.abs (Term.openRec 1 A Ec)) := by
