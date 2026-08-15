@@ -229,24 +229,25 @@ theorem idx_append_notMem {z : String} : ∀ {ctx : List String}, z ∉ ctx →
 free variable. -/
 theorem toLN_openRec_subst {V : Term String} :
     ∀ (c : NTerm) {ctx : List String} {z : String}, z ∉ ctx →
-      Term.openRec ctx.length V (NTerm.toLN (ctx ++ [z]) c)
-        = Term.subst z V (NTerm.toLN ctx c) := by
+    Term.openRec ctx.length V (NTerm.toLN (ctx ++ [z]) c) = (NTerm.toLN ctx c)[z:=V] := by
   intro c
   induction c with
   | var v =>
       intro ctx z hz
       simp only [NTerm.toLN]
       by_cases hv : v = z
-      · subst hv
+      · subst_vars
         rw [idx_append_notMem hz, idx_none_of_notMem hz]
         simp [Term.openRec, Term.subst]
+        grind
       · rw [idx_append_ne hv]
         cases hi : NTerm.idx v ctx with
         | some i =>
             have := idx_lt_length hi
             simp [Term.openRec, Term.subst]
-            omega
+            split <;> grind
         | none => simp [Term.openRec, Term.subst, hv]
+                  grind
   | lam w b ih =>
       intro ctx z hz
       simp only [NTerm.toLN, Term.openRec, Term.subst]
@@ -254,8 +255,7 @@ theorem toLN_openRec_subst {V : Term String} :
       rw [hcons]
       by_cases hw : w = z
       · subst hw
-        rw [toLN_append_self b (by simp)]
-        rw [openRec_toLN_ge b (by simp), subst_toLN_mem b (by simp)]
+        rw [toLN_append_self b (by simp), openRec_toLN_ge b (by simp), subst_abs, subst_toLN_mem b (by simp)]
       · have hlen : ((w :: ctx).length : ℕ) = ctx.length + 1 := by simp
         rw [← hlen]
         refine congrArg Term.abs (ih ?_)
@@ -266,6 +266,7 @@ theorem toLN_openRec_subst {V : Term String} :
   | app a b iha ihb =>
       intro ctx z hz
       simp only [NTerm.toLN, Term.openRec, Term.subst, iha hz, ihb hz]
+      grind
 
 theorem fv_toLN_eq_empty : ∀ (u : NTerm) {ctx : List String}, NTerm.WN ctx u →
     Term.fv (NTerm.toLN ctx u) = ∅ := by
@@ -319,9 +320,11 @@ theorem lc_abs2_of {E : Term String}
 term. -/
 theorem lc_abs2_open {E A B : Term String} (hE : LC (Term.abs (Term.abs E)))
     (hA : LC A) (hB : LC B) : LC (Term.openRec 0 B (Term.openRec 1 A E)) := by
-  have h1 : LC ((Term.abs E) ^ A) := lc_open_of_lc_abs hE hA
-  simp only [Term.hpow_def, Term.openRec] at h1
-  exact lc_open_of_lc_abs h1 hB
+  rw [<- lcAt_iff_LC] at *
+  rw [lcAt_openRec_iff_lcAt, lcAt_openRec_iff_lcAt]
+  grind
+  apply lcAt_le _ _ _ (by omega) hA
+  grind
 
 /-- The block `λ λ 1` is locally closed. -/
 theorem lc_block_bvar1 : LC (Term.abs (Term.abs (Term.bvar 1)) : Term String) := by
@@ -339,15 +342,13 @@ theorem lc_block_bvar0 : LC (Term.abs (Term.abs (Term.bvar 0)) : Term String) :=
 theorem openRec_app_block {G W : Term String} (hG : LC G) (k : ℕ) (V : Term String) :
     Term.openRec k V (Term.app G W) = Term.app G (Term.openRec k V W) := by
   rw [show Term.openRec k V (Term.app G W)
-        = Term.app (Term.openRec k V G) (Term.openRec k V W) from rfl, Term.openRec_lc hG]
+        = Term.app (Term.openRec k V G) (Term.openRec k V W) from rfl, open_lc]
+  grind
 
 /-- A substituted variable no longer occurs free. -/
 theorem notMem_fv_subst {p : String} {V T : Term String} (h : p ∉ Term.fv V) :
-    p ∉ Term.fv (Term.subst p V T) := by
-  intro hc
-  rcases Finset.mem_union.1 (Term.fv_subst_subset p V T hc) with h1 | h1
-  · simp at h1
-  · exact h h1
+    p ∉ Term.fv (T[p:=V] ) := by
+    grind [subst_preserve_not_fvar]
 
 /-! ## The translation -/
 
