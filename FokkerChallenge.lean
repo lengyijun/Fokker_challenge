@@ -41,3 +41,4 @@ import FokkerChallenge.TwoVarsAreNotEnough.Q
 import FokkerChallenge.TwoVarsAreNotEnough.U
 import FokkerChallenge.TwoVarsAreNotEnough.Final
 import FokkerChallenge.TwoVarsAreNotEnough.Subterms
+import FokkerChallenge.TwoVarsAreNotEnough.Nameable
