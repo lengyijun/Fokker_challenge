@@ -467,7 +467,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
             simp [NTerm.toLN, Term.subst]
             grind
           rw [htarget]
-          refine FullBetaStar.abs ({"x", "y"} : Finset String) ?_
+          refine FullBeta.redex_abs_cong ({"x", "y"} : Finset String) ?_
           intro f hf
           simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hf
           have hfp : f ≠ p := by rcases hp with rfl | rfl; exacts [hf.1, hf.2]
@@ -475,10 +475,9 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
           have hAvf : AvoidXY (Term.fvar f) := by
             constructor <;> simp [Term.fv] <;> tauto
           have hL := hRc B (Term.fvar f) hB (LC.fvar f) hBx hAvf
-          have e1 : Term.subst p A (Term.fvar f) = Term.fvar f := by simp [Term.subst, hfp]
-          have e2 : Term.subst q B (Term.fvar f) = Term.fvar f := by simp [Term.subst, hfq]
-          have hpnot : p ∉ Term.fv (Term.subst q B (Term.subst p (Term.fvar f)
-              (NTerm.toLN [] c))) := by
+          have e1 : (Term.fvar f)[p:=A] = Term.fvar f := by grind
+          have e2 : (Term.fvar f)[q:=B] = Term.fvar f := by grind
+          have hpnot : p ∉ Term.fv (((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B]) := by
             intro hcc
             rcases Finset.mem_union.1 (Term.fv_subst_subset q B _ hcc) with h1 | h1
             · exact (notMem_fv_subst (T := NTerm.toLN [] c) (V := Term.fvar f)
@@ -527,7 +526,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
           have hstep : FullBeta (Term.app (Term.abs (Term.abs Ec)) A)
               (Term.abs (Term.openRec 1 A Ec)) := by
             have := Xi.base (Beta.beta (M := Term.abs Ec) (N := A) hLc hA)
-            simpa [Term.hpow_def, Term.openRec] using this
+            grind
           refine Relation.ReflTransGen.head hstep ?_
           have htarget : Term.subst p A (Term.subst q B (NTerm.toLN [] (NTerm.lam z c)))
               = Term.abs (Term.subst p A (Term.subst q B (NTerm.toLN [q] c))) := by
