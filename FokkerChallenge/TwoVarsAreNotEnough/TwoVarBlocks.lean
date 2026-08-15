@@ -354,6 +354,7 @@ theorem notMem_fv_subst {p : String} {V T : Term String} (h : p ∉ Term.fv V) :
 
 /-- The terms that may be substituted for the two parameters: locally closed
 terms not mentioning the names `x` and `y`. -/
+@[simp, scoped grind unfold]
 def AvoidXY (A : Term String) : Prop := "x" ∉ Term.fv A ∧ "y" ∉ Term.fv A
 
 theorem AvoidXY.notMem {A : Term String} (hA : AvoidXY A) {p : String}
@@ -479,29 +480,33 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
           have e2 : (Term.fvar f)[q:=B] = Term.fvar f := by grind
           have hpnot : p ∉ Term.fv (((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B]) := by
             intro hcc
-            rcases Finset.mem_union.1 (Term.fv_subst_subset q B _ hcc) with h1 | h1
-            · exact (notMem_fv_subst (T := NTerm.toLN [] c) (V := Term.fvar f)
-                (by simp [Term.fv]; tauto)) (Finset.mem_sdiff.1 h1).1
-            · exact hBx.notMem hp h1
-          have hRHS : (Term.subst p A (Term.subst q B (NTerm.toLN [p] c))) ^ Term.fvar f
-              = Term.subst q B (Term.subst p (Term.fvar f) (NTerm.toLN [] c)) := by
-            calc (Term.subst p A (Term.subst q B (NTerm.toLN [p] c))) ^ Term.fvar f
-                = Term.openRec 0 (Term.subst p A (Term.fvar f))
-                    (Term.subst p A (Term.subst q B (NTerm.toLN [p] c))) := by rw [e1]; rfl
-              _ = Term.subst p A (Term.openRec 0 (Term.fvar f)
-                    (Term.subst q B (NTerm.toLN [p] c))) :=
-                    (Term.subst_openRec hA 0 (Term.fvar f) _).symm
-              _ = Term.subst p A (Term.subst q B
-                    (Term.openRec 0 (Term.fvar f) (NTerm.toLN [p] c))) := by
-                    rw [Term.subst_openRec hB 0 (Term.fvar f), e2]
-              _ = Term.subst p A (Term.subst q B
-                    (Term.subst p (Term.fvar f) (NTerm.toLN [] c))) := by
+            cases (@subst_preserve_not_fvar _ _ q (NTerm.toLN [] c)[p:=Term.fvar f] B) <;>
+            cases (@subst_preserve_not_fvar _ _ p (NTerm.toLN [] c) (Term.fvar f))
+            . grind
+            . grind
+            . rename_i h1 h2
+              rw [h1, h2] at hcc
+              grind
+            . rename_i h1 h2
+              rw [h1, h2] at hcc
+              simp at hcc
+              cases hcc <;> grind
+          have hRHS : (((NTerm.toLN [p] c)[q:=B])[p:=A]) ^ Term.fvar f
+              = ((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B] := by
+            calc (((NTerm.toLN [p] c)[q:=B])[p:=A]) ^ Term.fvar f
+                = Term.openRec 0 ((Term.fvar f)[p:=A])
+                    (((NTerm.toLN [p] c)[q:=B])[p:=A]) := by rw [e1]; rfl
+              _ = (Term.openRec 0 (Term.fvar f)
+                    ((NTerm.toLN [p] c)[q:=B]))[p:=A] := by grind
+              _ = ((Term.openRec 0 (Term.fvar f) (NTerm.toLN [p] c))[q:=B])[p:=A] := by grind
+              _ = (((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B])[p:=A] := by
                     have := toLN_openRec_subst (V := Term.fvar f) c (ctx := []) (z := p) (by simp)
-                    simpa using congrArg (fun X => Term.subst p A (Term.subst q B X)) this
-              _ = Term.subst q B (Term.subst p (Term.fvar f) (NTerm.toLN [] c)) :=
-                    Term.subst_fresh hpnot
+                    grind
+              _ = ((NTerm.toLN [] c)[p:=Term.fvar f])[q:=B] := by
+                    apply Term.subst_fresh
+                    grind
           rw [hRHS]
-          simpa [Term.hpow_def] using hL
+          grind
       · -- the binder is named `q`; the block's parameters are `(p, q)`
         obtain ⟨Ec, hEc, hLc, hRc⟩ := ih p q hpq hp hq hc1
         refine ⟨Term.app (Term.abs (Term.abs Ec)) (Term.bvar 1), ?_, ?_, ?_⟩
@@ -528,12 +533,13 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
             have := Xi.base (Beta.beta (M := Term.abs Ec) (N := A) hLc hA)
             grind
           refine Relation.ReflTransGen.head hstep ?_
-          have htarget : Term.subst p A (Term.subst q B (NTerm.toLN [] (NTerm.lam z c)))
-              = Term.abs (Term.subst p A (Term.subst q B (NTerm.toLN [q] c))) := by
+          have htarget : ((NTerm.toLN [] (NTerm.lam z c))[q:=B])[p:=A]
+              = Term.abs (((NTerm.toLN [q] c)[q:=B])[p:=A]) := by
             rw [hzq]
             simp [NTerm.toLN, Term.subst]
+            grind
           rw [htarget]
-          refine FullBetaStar.abs ({"x", "y"} : Finset String) ?_
+          refine FullBeta.redex_abs_cong ({"x", "y"} : Finset String) ?_
           intro f hf
           simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hf
           have hfp : f ≠ p := by rcases hp with rfl | rfl; exacts [hf.1, hf.2]
@@ -541,33 +547,30 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
           have hAvf : AvoidXY (Term.fvar f) := by
             constructor <;> simp [Term.fv] <;> tauto
           have hL := hRc A (Term.fvar f) hA (LC.fvar f) hAx hAvf
-          have e1 : Term.subst p A (Term.fvar f) = Term.fvar f := by simp [Term.subst, hfp]
-          have e2 : Term.subst q B (Term.fvar f) = Term.fvar f := by simp [Term.subst, hfq]
-          have hqnot : q ∉ Term.fv (Term.subst q (Term.fvar f) (NTerm.toLN [] c)) :=
+          have e1 : (Term.fvar f)[p:=A] = Term.fvar f := by grind
+          have e2 : (Term.fvar f)[q:=B] = Term.fvar f := by grind
+          have hqnot : q ∉ Term.fv ((NTerm.toLN [] c)[q:=Term.fvar f]) :=
             notMem_fv_subst (by simp [Term.fv]; tauto)
-          have hRHS : (Term.subst p A (Term.subst q B (NTerm.toLN [q] c))) ^ Term.fvar f
-              = Term.subst p A (Term.subst q (Term.fvar f) (NTerm.toLN [] c)) := by
-            calc (Term.subst p A (Term.subst q B (NTerm.toLN [q] c))) ^ Term.fvar f
-                = Term.openRec 0 (Term.subst p A (Term.fvar f))
-                    (Term.subst p A (Term.subst q B (NTerm.toLN [q] c))) := by rw [e1]; rfl
-              _ = Term.subst p A (Term.openRec 0 (Term.fvar f)
-                    (Term.subst q B (NTerm.toLN [q] c))) :=
-                    (Term.subst_openRec hA 0 (Term.fvar f) _).symm
-              _ = Term.subst p A (Term.subst q B
-                    (Term.openRec 0 (Term.fvar f) (NTerm.toLN [q] c))) := by
-                    rw [Term.subst_openRec hB 0 (Term.fvar f), e2]
-              _ = Term.subst p A (Term.subst q B
-                    (Term.subst q (Term.fvar f) (NTerm.toLN [] c))) := by
+          have hRHS : (((NTerm.toLN [q] c)[q:=B])[p:=A]) ^ Term.fvar f
+              = ((NTerm.toLN [] c)[q:=Term.fvar f])[p:=A] := by
+            calc (((NTerm.toLN [q] c)[q:=B])[p:=A]) ^ Term.fvar f
+                = Term.openRec 0 ((Term.fvar f)[p:=A])
+                    (((NTerm.toLN [q] c)[q:=B])[p:=A]) := by rw [e1]; rfl
+              _ = (Term.openRec 0 (Term.fvar f) ((NTerm.toLN [q] c)[q:=B]))[p:=A] := by grind
+                    -- (Term.subst_openRec hA 0 (Term.fvar f) _).symm
+              _ = ((Term.openRec 0 (Term.fvar f) (NTerm.toLN [q] c))[q:=B])[p:=A] := by grind
+                    -- rw [Term.subst_openRec hB 0 (Term.fvar f), e2]
+              _ = (((NTerm.toLN [] c)[q:=Term.fvar f])[q:=B])[p:=A] := by
                     have := toLN_openRec_subst (V := Term.fvar f) c (ctx := []) (z := q) (by simp)
-                    simpa using congrArg (fun X => Term.subst p A (Term.subst q B X)) this
-              _ = Term.subst p A (Term.subst q (Term.fvar f) (NTerm.toLN [] c)) := by
-                    rw [Term.subst_fresh hqnot]
+                    simpa using congrArg (fun X => (X[q:=B])[p:=A]) this
+              _ = ((NTerm.toLN [] c)[q:=Term.fvar f])[p:=A] := by
+                    rw [Term.subst_fresh _ _ _ hqnot]
           rw [hRHS]
-          simpa [Term.hpow_def] using hL
+          grind
 
 /-- **Main theorem**: a term nameable with the two names `x` and `y` is a
 β-reduct of an application combination of binary blocks. -/
-theorem exists_block_combination_betaStar {t : Term String} (h : isNamedOfXY t = true) :
+theorem exists_block_combination_betaStar (t : Term String) (h : isNamedOfXY t = true) :
     ∃ s : Term String,
       ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧ s ↠βᶠ t := by
   obtain ⟨u, hwn, rfl⟩ := exists_named_of_isNamedOfXY h
@@ -587,10 +590,13 @@ theorem exists_block_combination_betaStar {t : Term String} (h : isNamedOfXY t =
         (Term.abs (Term.openRec 1 (Term.abs (Term.abs (Term.bvar 1))) E)) := by
       have := Xi.base (Beta.beta (M := Term.abs E)
         (N := (Term.abs (Term.abs (Term.bvar 1)) : Term String)) hLE hKlc)
-      simpa [Term.hpow_def, Term.openRec] using this
+      grind
     have hlc : LC (Term.abs (Term.openRec 1 (Term.abs (Term.abs (Term.bvar 1))) E)) := by
-      have := lc_open_of_lc_abs hLE hKlc
-      simpa [Term.hpow_def, Term.openRec] using this
+      rw [<- lcAt_iff_LC] at *
+      unfold LcAt
+      rw [lcAt_openRec_iff_lcAt]
+      grind
+      grind
     have step2 : FullBeta
         (Term.app (Term.abs (Term.openRec 1 (Term.abs (Term.abs (Term.bvar 1))) E))
           (Term.abs (Term.abs (Term.bvar 1))))
@@ -598,15 +604,14 @@ theorem exists_block_combination_betaStar {t : Term String} (h : isNamedOfXY t =
           (Term.openRec 1 (Term.abs (Term.abs (Term.bvar 1))) E)) := by
       have := Xi.base (Beta.beta (M := Term.openRec 1 (Term.abs (Term.abs (Term.bvar 1))) E)
         (N := (Term.abs (Term.abs (Term.bvar 1)) : Term String)) hlc hKlc)
-      simpa [Term.hpow_def] using this
+      grind
     have hR' := hR _ _ hKlc hKlc hKav hKav
     have hfv : Term.fv (NTerm.toLN [] u) = ∅ := fv_toLN_eq_empty u hwn
-    have hsubst : Term.subst "x" (Term.abs (Term.abs (Term.bvar 1)))
-        (Term.subst "y" (Term.abs (Term.abs (Term.bvar 1))) (NTerm.toLN [] u))
+    have hsubst : ((NTerm.toLN [] u)["y":=(Term.abs (Term.abs (Term.bvar 1)) : Term String)])["x":= (Term.abs (Term.abs (Term.bvar 1)) : Term String)]
         = NTerm.toLN [] u := by
-      have hy : Term.subst "y" (Term.abs (Term.abs (Term.bvar 1))) (NTerm.toLN [] u)
-          = NTerm.toLN [] u := Term.subst_fresh (by simp [hfv])
-      rw [hy, Term.subst_fresh (by simp [hfv])]
+      have hy :  (NTerm.toLN [] u)["y":= (Term.abs (Term.abs (Term.bvar 1)))]
+          = NTerm.toLN [] u := Term.subst_fresh _ _ _ (by simp [hfv])
+      rw [hy, Term.subst_fresh _ _ _ (by simp [hfv])]
     rw [hsubst] at hR'
     exact (Relation.ReflTransGen.head (Xi.appR hKlc step1)
       (Relation.ReflTransGen.single step2)).trans hR'
@@ -624,7 +629,7 @@ binary blocks. -/
 example : ∃ s : Term String,
     ClosedUnderApp (fun a => abs_two_vars_are_enough a = true) s ∧
     s ↠βᶠ (Term.abs (Term.abs (Term.app (Term.bvar 1) (Term.bvar 0)))) :=
-  exists_block_combination_betaStar (by decide)
+  exists_block_combination_betaStar _ (by decide)
 
 /-- `λa. λb. λc. a b` genuinely needs three names and is rejected. -/
 example :

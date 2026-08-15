@@ -25,6 +25,7 @@ import FokkerChallenge.TwoVarsAreNotEnough.Unroll
 import FokkerChallenge.TwoVarsAreNotEnough.Q
 import FokkerChallenge.TwoVarsAreNotEnough.U
 import FokkerChallenge.TwoVarsAreNotEnough.Subterms
+import FokkerChallenge.TwoVarsAreNotEnough.TwoVarBlocks
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Insert
 import Mathlib.Data.Finset.Union
@@ -187,3 +188,7 @@ theorem no_reduction_to_Hn_with_depth_bound_closedunderapp (fs)
               apply closedUnderAppBool_genfinset_subterms at hl
               apply genfinset_subset ?_ hl
               grind
+
+theorem isNamedOfXY_not_basis (fs)
+  (hl : ∀ t ∈ fs, isNamedOfXY t) : not_basises fs := by
+  sorry

@@ -16,7 +16,7 @@ def Gen (atom : Term String) := GenFinset [atom]
 
 @[simp, scoped grind unfold]
 def not_basises (atoms : List (Term String)) : Prop :=
-  ∃ y, y.LC ∧ y.fv = ∅ ∧ ∀ t, GenFinset atoms t → Relation.ReflTransGen FullBetaEta t y → False
+  ∃ y, y.LC ∧ y.fv = ∅ ∧ ∀ t, GenFinset atoms t → t ↠βηᶠ y → False
 
 @[simp, scoped grind unfold]
 def not_basis (atom : Term String) : Prop := not_basises [atom]
