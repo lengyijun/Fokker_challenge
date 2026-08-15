@@ -370,7 +370,7 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
     (p = "x" ∨ p = "y") → (q = "x" ∨ q = "y") → NTerm.WN [p, q] u →
     ∃ E : Term String, two_vars_are_enough E = true ∧ LC (Term.abs (Term.abs E)) ∧
       ∀ A B : Term String, LC A → LC B → AvoidXY A → AvoidXY B →
-(Term.openRec 0 B (Term.openRec 1 A E)) ↠βᶠ (Term.subst p A (Term.subst q B (NTerm.toLN [] u))) := by
+(Term.openRec 0 B (Term.openRec 1 A E)) ↠βᶠ (((NTerm.toLN [] u)[q:=B])[p:=A]) := by
   intro u
   induction u with
   | var v =>
@@ -382,10 +382,10 @@ theorem exists_block_body : ∀ (u : NTerm) (p q : String), p ≠ q →
         intro A B hA hB hAx hBx
         rw [htv, h]
         have h1 : Term.openRec 0 B (Term.openRec 1 A (Term.bvar 1)) = A := by
-          simp [Term.openRec, Term.openRec_lc hA]
-        have h2 : Term.subst p A (Term.subst q B (Term.fvar p)) = A := by
-          simp only [Term.subst, if_neg hpq]
-          simp
+          simp [Term.openRec, open_lc]
+          grind
+        have h2 : ((Term.fvar p)[q:=B])[p:=A] = A := by
+          grind
         rw [h1, h2]
       · refine ⟨Term.bvar 0, by simp [two_vars_are_enough], lc_block_bvar0, ?_⟩
         intro A B hA hB hAx hBx
