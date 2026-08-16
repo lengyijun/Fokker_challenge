@@ -33,13 +33,61 @@ struct SearchResult {
 
     undecided_terms: usize,
     finite_terms: usize,
-    two_vars_are_enough_terms: usize,
     terms_with_redex: usize,
-    other_terms: usize,
 }
 
 const UNDECIDED_TERMS_JSON: &str = "../undecided_terms.json";
 const FINITE_TERMS_JSON: &str = "../FokkerChallenge/GenFinite/finite.json";
+const TWO_VARS_ARE_ENOUGH_TERMS_JSON: &str = "../two_vars_are_enough_terms.json";
+const TERMS_01_JSON: &str = "../terms_01.json";
+const OTHER_JSON: &str = "../other.json";
+
+fn serialize_terms(terms: Vec<Term>) -> Vec<String> {
+    let mut serialized = terms
+        .into_iter()
+        .map(|term| format!("{:?}", term))
+        .collect::<Vec<_>>();
+    serialized.sort();
+    serialized
+}
+
+fn write_terms_to_json_file(terms: Vec<Term>, path: &str) -> std::io::Result<()> {
+    let serialized = serialize_terms(terms);
+    let json = serde_json::to_string_pretty(&serialized)?;
+    fs::write(path, json)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serialize_terms_formats_sorted_strings() {
+        let terms = vec![
+            parse_term("λx.x").unwrap(),
+            parse_term("λx.λy.x").unwrap(),
+        ];
+        let formatted = serialize_terms(terms);
+
+        assert_eq!(formatted.len(), 2);
+        assert!(formatted.iter().all(|s| !s.is_empty()));
+    }
+
+    #[test]
+    fn write_terms_to_json_file_writes_array() {
+        let path = "/tmp/two_vars_terms_test.json";
+        let terms = vec![parse_term("λx.x").unwrap()];
+
+        write_terms_to_json_file(terms, path).unwrap();
+
+        let contents = fs::read_to_string(path).unwrap();
+        let parsed: Vec<String> = serde_json::from_str(&contents).unwrap();
+        assert_eq!(parsed.len(), 1);
+        assert!(parsed[0].contains("x"));
+
+        let _ = fs::remove_file(path);
+    }
+}
 
 fn main() {
     let json_str = fs::read_to_string(UNDECIDED_TERMS_JSON).unwrap();
@@ -64,9 +112,26 @@ fn main() {
         .into_iter()
         .partition(|t| t.two_vars_are_enough());
 
+    let (terms_01, other_terms): (Vec<Term>, Vec<Term>) = other_terms
+        .into_iter()
+        .partition(|t| t.convert().is_some());
+
     let (terms_with_redex, other_terms): (Vec<Term>, Vec<Term>) = other_terms
         .into_iter()
         .partition(|t| t.has_beta_redex() || t.has_eta_redex());
+
+    if let Err(e) = write_terms_to_json_file(two_vars_are_enough_terms, TWO_VARS_ARE_ENOUGH_TERMS_JSON) {
+        eprintln!("Failed to write {}: {}", TWO_VARS_ARE_ENOUGH_TERMS_JSON, e);
+    }
+
+    if let Err(e) = write_terms_to_json_file(terms_01, TERMS_01_JSON) {
+        eprintln!("Failed to write {}: {}", TERMS_01_JSON, e);
+    }
+
+    if let Err(e) = write_terms_to_json_file(other_terms, OTHER_JSON) {
+        eprintln!("Failed to write {}: {}", OTHER_JSON, e);
+    }
+
 
     let folder_path = "..";
     let file_extension: &OsStr = OsStr::new("lean");
@@ -134,8 +199,6 @@ fn main() {
         undecided_terms: undecided_terms.len(),
         finite_terms: finite_terms.len(),
         terms_with_redex: terms_with_redex.len(),
-        two_vars_are_enough_terms: two_vars_are_enough_terms.len(),
-        other_terms: other_terms.len(),
     };
 
     match serde_json::to_string_pretty(&search_result) {
@@ -145,7 +208,8 @@ fn main() {
             } else {
                 println!("✅ Processing complete!");
                 println!("   Total prefixes extracted: {}", total_matches);
-                println!("   Output file: {}", output_file);
+                println!("   Main output file: {}", output_file);
+                println!("   Separate terms file: {}", TWO_VARS_ARE_ENOUGH_TERMS_JSON);
             }
         }
         Err(e) => eprintln!("Fail serialize JSON: {}", e),
